@@ -115,6 +115,19 @@ export const MOCK_SUBMISSIONS: Submission[] = [
       odometerEnd: 45038,
     },
     feedbackThread: [],
+  },
+  {
+    id: "SUB-1004",
+    type: "time-off",
+    status: "approved",
+    submitterId: "EMP-002",
+    createdAt: "2026-09-15T08:00:00Z",
+    updatedAt: "2026-09-16T09:00:00Z",
+    data: {
+      dates: ["2026-10-02"],
+      reason: "Personal Day",
+    },
+    feedbackThread: [],
   }
 ];
 
@@ -122,6 +135,7 @@ export interface Document {
   id: string;
   name: string;
   type: string;
+  category: "POLICY MANUALS" | "STANDARDS OF PRACTICE" | "CORPORATE DOCUMENTS" | "PRINTABLE FORMS";
   sizeBytes: number;
   modifiedAt: string;
   sharedWith: "all" | "managers" | "specific";
@@ -130,16 +144,45 @@ export interface Document {
 export const MOCK_DOCUMENTS: Document[] = [
   {
     id: "DOC-001",
-    name: "2024 Stewardship & Ethics Handbook.pdf",
+    name: "2026 Stewardship & Ethics Handbook.pdf",
     type: "pdf",
+    category: "POLICY MANUALS",
     sizeBytes: 4500000,
     modifiedAt: "2026-01-15T09:00:00Z",
+    sharedWith: "all",
+  },
+  {
+    id: "DOC-004",
+    name: "Employee Benefits Guide.pdf",
+    type: "pdf",
+    category: "POLICY MANUALS",
+    sizeBytes: 2500000,
+    modifiedAt: "2025-11-20T08:00:00Z",
+    sharedWith: "all",
+  },
+  {
+    id: "DOC-005",
+    name: "Transfer Operations Protocol.docx",
+    type: "docx",
+    category: "STANDARDS OF PRACTICE",
+    sizeBytes: 1500000,
+    modifiedAt: "2026-02-12T10:30:00Z",
+    sharedWith: "all",
+  },
+  {
+    id: "DOC-006",
+    name: "Sanitation and OSHA Compliance.pdf",
+    type: "pdf",
+    category: "STANDARDS OF PRACTICE",
+    sizeBytes: 3100000,
+    modifiedAt: "2026-03-01T14:15:00Z",
     sharedWith: "all",
   },
   {
     id: "DOC-002",
     name: "Q3 Operational Report.xlsx",
     type: "xlsx",
+    category: "CORPORATE DOCUMENTS",
     sizeBytes: 1250000,
     modifiedAt: "2026-10-01T14:30:00Z",
     sharedWith: "managers",
@@ -148,17 +191,38 @@ export const MOCK_DOCUMENTS: Document[] = [
     id: "DOC-003",
     name: "Facility Maintenance Contract - Oct.docx",
     type: "docx",
+    category: "CORPORATE DOCUMENTS",
     sizeBytes: 850000,
     modifiedAt: "2026-09-25T11:15:00Z",
     sharedWith: "managers",
+  },
+  {
+    id: "DOC-007",
+    name: "PTO Request Form.pdf",
+    type: "pdf",
+    category: "PRINTABLE FORMS",
+    sizeBytes: 420000,
+    modifiedAt: "2025-08-10T09:45:00Z",
+    sharedWith: "all",
+  },
+  {
+    id: "DOC-008",
+    name: "Incident Report Template.docx",
+    type: "docx",
+    category: "PRINTABLE FORMS",
+    sizeBytes: 210000,
+    modifiedAt: "2026-01-05T16:00:00Z",
+    sharedWith: "all",
   }
 ];
+
+export type ScheduleRole = "Lead Director - MB" | "Lead Director - CSG" | "Lead Director - EVG" | "Lead Director - EDENS" | "TRANSFERS - FIRST" | "TRANSFERS - SECOND" | "TRANSFERS - BACK UP" | "CREMATIONS" | "ME RUN";
 
 export interface ScheduleEntry {
   id: string;
   date: string; // YYYY-MM-DD
   userId: string;
-  roleType: "lead" | "transfer" | "cremation" | "support";
+  roleType: ScheduleRole;
   isUrgent?: boolean;
 }
 
@@ -167,18 +231,18 @@ export const MOCK_SCHEDULE_ENTRIES: ScheduleEntry[] = [
     id: "SCH-001",
     date: "2026-10-02",
     userId: "EMP-001",
-    roleType: "lead",
+    roleType: "Lead Director - MB",
   },
   {
     id: "SCH-002",
     date: "2026-10-02",
-    userId: "EMP-002",
-    roleType: "transfer",
+    userId: "MGR-001",
+    roleType: "TRANSFERS - FIRST",
   },
   {
     id: "SCH-003",
     date: "2026-10-03",
     userId: "EMP-001",
-    roleType: "support",
+    roleType: "CREMATIONS",
   }
 ];

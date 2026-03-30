@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { MOCK_SCHEDULE_ENTRIES, MOCK_USERS } from "@/lib/mock-data";
-import { ChevronLeft, ChevronRight, Phone, Truck, Flame, Plus } from "lucide-react";
+import { MOCK_SCHEDULE_ENTRIES, MOCK_USERS, MOCK_SUBMISSIONS, ScheduleRole } from "@/lib/mock-data";
+import { ChevronLeft, ChevronRight, Phone, Truck, Flame, Plus, Mail } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/Modal";
@@ -17,18 +17,32 @@ export default function ManagerSchedule() {
   const daysInMonth = 31;
   const startDay = 4; // Thu
 
+  const REQUIRED_ROLES: ScheduleRole[] = [
+    "Lead Director - MB",
+    "Lead Director - CSG",
+    "Lead Director - EVG",
+    "Lead Director - EDENS",
+    "TRANSFERS - FIRST",
+    "TRANSFERS - SECOND",
+    "TRANSFERS - BACK UP",
+    "CREMATIONS",
+    "ME RUN"
+  ];
+
   const getRoleIcon = (roleType: string) => {
-    switch (roleType) {
-      case 'lead': return <Phone className="w-3.5 h-3.5 text-brand-700" />;
-      case 'transfer': return <Truck className="w-3.5 h-3.5 text-slate-600" />;
-      case 'cremation': return <Flame className="w-3.5 h-3.5 text-orange-600" />;
-      default: return null;
-    }
+    if (roleType.includes("Lead Director")) return <Phone className="w-3.5 h-3.5 text-brand-700" />;
+    if (roleType.includes("TRANSFERS") || roleType.includes("ME RUN")) return <Truck className="w-3.5 h-3.5 text-slate-600" />;
+    if (roleType === "CREMATIONS") return <Flame className="w-3.5 h-3.5 text-orange-600" />;
+    return null;
   };
 
   const handleDayClick = (dateStr: string) => {
     setSelectedDate(dateStr);
     setIsModalOpen(true);
+  };
+
+  const handleSendSchedule = () => {
+    alert("Schedule has been successfully emailed to all assigned staff!");
   };
 
   const currentMonthDateString = "2026-10-";
@@ -42,6 +56,13 @@ export default function ManagerSchedule() {
         </div>
         
         <div className="flex items-center gap-4">
+          <button 
+            onClick={handleSendSchedule}
+            className="flex items-center gap-2 px-4 py-2 bg-brand-900 text-white rounded-lg font-semibold shadow-sm hover:bg-brand-800 transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            Send Schedule
+          </button>
           <button className="p-2 border border-slate-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 text-slate-700 font-medium text-sm">
             Today
           </button>
@@ -131,7 +152,7 @@ export default function ManagerSchedule() {
                     </div>
                     <div>
                       <p className="font-semibold text-sm text-brand-900">{u?.name}</p>
-                      <p className="text-xs text-slate-500 capitalize">{entry.roleType}</p>
+                      <p className="text-xs text-slate-500 font-medium tracking-wide">{entry.roleType}</p>
                     </div>
                   </li>
                 );
@@ -142,46 +163,51 @@ export default function ManagerSchedule() {
       </div>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={`Assign Staff: ${selectedDate}`}>
-        <div className="space-y-6">
-          <p className="text-sm text-slate-600">Select personnel to schedule for this date.</p>
+        <div className="space-y-6 flex flex-col h-[75vh]">
+          <p className="text-sm text-slate-600 shrink-0">Select personnel to fill all required roles for this date. Unavailable employees are omitted.</p>
           
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Select Employee</label>
-            <select className="w-full border border-slate-200 rounded-lg p-3 bg-white focus:ring-2 focus:ring-brand-500 font-medium text-slate-700">
-              <option value="">-- Choose Staff --</option>
-              {MOCK_USERS.filter(u => u.role === 'employee').map(u => (
-                <option key={u.id} value={u.id}>{u.name} ({u.title})</option>
-              ))}
-            </select>
+          <div className="space-y-3 overflow-y-auto pr-2 pb-2 flex-1 scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
+            {REQUIRED_ROLES.map(role => {
+              // Map mock assignments to slots
+              const existingEntry = selectedDate ? MOCK_SCHEDULE_ENTRIES.find(e => e.date === selectedDate && e.roleType === role) : undefined;
+
+              // Filter users who are OFF on this date
+              const availableUsers = MOCK_USERS.filter(u => {
+                const isOff = MOCK_SUBMISSIONS.some(sub => 
+                  sub.type === "time-off" && 
+                  sub.status === "approved" && 
+                  sub.submitterId === u.id && 
+                  sub.data?.dates?.includes(selectedDate)
+                );
+                return !isOff;
+              });
+
+              return (
+                <div key={role} className="flex flex-col gap-1.5 border border-slate-200 p-3 rounded-xl bg-slate-50/50 shadow-sm">
+                  <div className="flex items-center gap-2 mb-1">
+                    {getRoleIcon(role)}
+                    <label className="text-xs font-bold text-slate-800 tracking-wider uppercase">{role}</label>
+                  </div>
+                  <select 
+                    defaultValue={existingEntry?.userId || ""}
+                    className="w-full border border-slate-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 font-medium text-slate-700 text-sm shadow-sm transition-all"
+                  >
+                    <option value="">-- Click to assign staff --</option>
+                    {availableUsers.map(u => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.title})</option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Select Role Designation</label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="border border-brand-200 bg-brand-50 p-3 rounded-xl cursor-pointer hover:border-brand-400 transition-colors flex flex-col items-center justify-center text-center">
-                <input type="radio" name="role" className="sr-only" value="lead" />
-                <Phone className="w-6 h-6 text-brand-700 mb-2" />
-                <span className="text-xs font-bold text-brand-900 uppercase">Lead Dir.</span>
-              </label>
-              <label className="border border-slate-200 bg-white p-3 rounded-xl cursor-pointer hover:border-slate-300 transition-colors flex flex-col items-center justify-center text-center opacity-70">
-                <input type="radio" name="role" className="sr-only" value="transfer" />
-                <Truck className="w-6 h-6 text-slate-600 mb-2" />
-                <span className="text-xs font-bold text-slate-700 uppercase">Transfer</span>
-              </label>
-              <label className="border border-slate-200 bg-white p-3 rounded-xl cursor-pointer hover:border-slate-300 transition-colors flex flex-col items-center justify-center text-center opacity-70">
-                <input type="radio" name="role" className="sr-only" value="cremation" />
-                <Flame className="w-6 h-6 text-orange-600 mb-2" />
-                <span className="text-xs font-bold text-slate-700 uppercase">Preparation</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 shrink-0">
             <button onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
               Cancel
             </button>
             <button onClick={() => setIsModalOpen(false)} className="bg-brand-900 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-800 transition-colors shadow-sm">
-              Confirm Assignment
+              Confirm Assignments
             </button>
           </div>
         </div>
