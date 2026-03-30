@@ -49,7 +49,7 @@ export default function EmployeeDocs() {
               <p className="text-sm text-slate-500 mt-0.5">OSHA logs, MSDA sheets</p>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:border-brand-300 transition-colors flex items-center gap-4 cursor-pointer">
             <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center shrink-0">
               <HeartHandshake className="w-7 h-7 text-brand-600" />
