@@ -1,61 +1,25 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { User, MOCK_USERS } from "./mock-data";
+import React, { createContext, useContext, useState } from "react";
+// Import Prisma's user type loosely or define it directly based on schema
+import { User as PrismaUser } from "../src/generated/prisma/client";
 
 interface AuthContextType {
-  user: User | null;
-  login: (email: string) => void;
-  logout: () => void;
-  switchRole: () => void;
-  isLoading: boolean;
+  user: PrismaUser | any | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Check local storage for existing session
-    const storedUserId = localStorage.getItem("cg_user_id");
-    if (storedUserId) {
-      const found = MOCK_USERS.find(u => u.id === storedUserId);
-      if (found) setUser(found);
-    }
-    setIsLoading(false);
-  }, []);
-
-  const login = (email: string) => {
-    const found = MOCK_USERS.find(u => u.email.toLowerCase() === email.toLowerCase());
-    if (found) {
-      setUser(found);
-      localStorage.setItem("cg_user_id", found.id);
-    } else {
-      // fallback to Employee 1 if not found for demo
-      setUser(MOCK_USERS[0]);
-      localStorage.setItem("cg_user_id", MOCK_USERS[0].id);
-    }
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem("cg_user_id");
-  };
-
-  const switchRole = () => {
-    if (!user) return;
-    const newRole = user.role === "employee" ? "manager" : "employee";
-    const newUser = MOCK_USERS.find(u => u.role === newRole);
-    if (newUser) {
-      setUser(newUser);
-      localStorage.setItem("cg_user_id", newUser.id);
-    }
-  };
-
+export function AuthProvider({ 
+  children, 
+  initialUser 
+}: { 
+  children: React.ReactNode; 
+  initialUser: any | null;
+}) {
+  // Pass the user directly bypassing trapped local `useState` initialization on NextJS Layout hydration transitions!
   return (
-    <AuthContext.Provider value={{ user, login, logout, switchRole, isLoading }}>
+    <AuthContext.Provider value={{ user: initialUser }}>
       {children}
     </AuthContext.Provider>
   );

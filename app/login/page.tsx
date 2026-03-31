@@ -1,27 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { useActionState } from "react";
+import { loginAction } from "@/app/actions/auth";
 import Image from "next/image";
 
-export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const { login } = useAuth();
-  const router = useRouter();
+const initialState = { error: "" };
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    login(email);
-    // Simple redirect based on email logic or role. 
-    // We already update role in `login()`, so let's redirect.
-    // For demo, if email contains 'manager' or we matched elena@, it's manager.
-    if (email.toLowerCase().includes("elena") || email.toLowerCase().includes("manager")) {
-      router.push("/manager/dashboard");
-    } else {
-      router.push("/employee/dashboard");
-    }
-  };
+export default function LoginPage() {
+  const [state, formAction, isPending] = useActionState(loginAction, initialState);
 
   return (
     <div className="min-h-screen flex bg-slate-50">
@@ -58,17 +44,21 @@ export default function LoginPage() {
             <p className="text-slate-500 mt-2">Access your employee portal</p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form action={formAction} className="space-y-6">
+            {state?.error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm font-medium border border-red-100">
+                {state.error}
+              </div>
+            )}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
                 Email Address
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 placeholder="sarah@caring.com OR elena@caring.com"
                 className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
               />
@@ -80,10 +70,10 @@ export default function LoginPage() {
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
                 required
-                value="password"
-                onChange={() => {}} // dummy
+                defaultValue="password123"
                 className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all"
               />
             </div>
@@ -98,17 +88,18 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              className="w-full bg-brand-900 hover:bg-brand-700 text-white font-medium py-3 rounded-lg transition-colors duration-200 mt-4 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+              disabled={isPending}
+              className="w-full bg-brand-900 hover:bg-brand-700 text-white font-medium py-3 rounded-lg transition-colors duration-200 mt-4 shadow-md hover:shadow-lg flex items-center justify-center gap-2 disabled:opacity-70"
             >
-              Sign In to Portal
+              {isPending ? "Authenticating..." : "Sign In to Portal"}
             </button>
           </form>
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-xs text-slate-400">
               Demo logins: <br/>
-              <span className="font-semibold">sarah@caring.com</span> (Employee) <br/>
-              <span className="font-semibold">elena@caring.com</span> (Manager)
+              <span className="font-semibold">sarah@caring.com</span> (password123) <br/>
+              <span className="font-semibold">elena@caring.com</span> (password123)
             </p>
           </div>
         </div>

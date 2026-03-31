@@ -1,16 +1,27 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { CheckSquare, Activity, Users, FolderOpen, ArrowRight } from "lucide-react";
+import { CheckSquare, Activity, Users, FolderOpen, ArrowRight, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { MOCK_SUBMISSIONS } from "@/lib/mock-data";
+import { fetchManagerQueue } from "@/app/actions/submissions";
+import { useState, useEffect } from "react";
 
 export default function ManagerDashboard() {
   const { user } = useAuth();
+  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchManagerQueue().then(data => {
+      setAllSubmissions(data);
+      setIsLoading(false);
+    });
+  }, []);
+
   if (!user) return null;
 
-  const pendingTimesheets = MOCK_SUBMISSIONS.filter(s => s.type === 'timesheet' && s.status === 'pending');
-  const allPending = MOCK_SUBMISSIONS.filter(s => s.status === 'pending');
+  const pendingTimesheets = allSubmissions.filter(s => s.type === 'timesheet' && s.status === 'pending');
+  const allPending = allSubmissions.filter(s => s.status === 'pending');
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -89,10 +100,14 @@ export default function ManagerDashboard() {
         </div>
         <div className="p-6">
           <div className="relative border-l-2 border-slate-200 ml-3 space-y-8">
-            {allPending.slice(0, 3).map((sub, i) => (
+            {isLoading ? (
+               <div className="pl-6"><Loader2 className="w-5 h-5 animate-spin text-brand-500" /></div>
+            ) : allPending.length === 0 ? (
+               <div className="pl-6 text-sm text-slate-500">No pending submissions in queue.</div>
+            ) : allPending.slice(0, 3).map((sub, i) => (
               <div key={sub.id} className="relative pl-8">
                 <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-amber-500 border-2 border-white ring-2 ring-amber-100 animate-pulse"></div>
-                <p className="text-sm font-semibold text-slate-900">{sub.submitterId} submitted a new <span className="capitalize">{sub.type}</span></p>
+                <p className="text-sm font-semibold text-slate-900">{sub.submitterName} submitted a new <span className="capitalize">{sub.type}</span></p>
                 <p className="text-xs text-slate-500 mt-1">{new Date(sub.createdAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
               </div>
             ))}

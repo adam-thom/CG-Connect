@@ -2,126 +2,266 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
+import { useState, use, useEffect, useActionState } from "react";
+import { submitFormAction } from "@/app/actions/submissions";
 import { 
   Clock, 
   Activity, 
   AlertTriangle, 
-  Send,
-  Save,
-  CheckCircle2
+  Send
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
-// Minimal forms for each type to demonstrate the UI differences mapped to the 5 forms
-export default function NewSubmissionPage({ params }: { params: { type: string } }) {
+const initialState = { error: "", success: false };
+
+export default function NewSubmissionPage(props: { params: Promise<{ type: string }> }) {
+  const params = use(props.params);
   const { user } = useAuth();
   const router = useRouter();
 
+  // Next.js 15 React Actions Integration
+  const boundSubmitAction = submitFormAction.bind(null, params.type);
+  const [state, formAction, isPending] = useActionState(boundSubmitAction, initialState);
+
+  const [transferType, setTransferType] = useState<string>("Standard");
+  const [hasTransferTime, setHasTransferTime] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (state.success) {
+      router.push("/employee/submissions");
+    }
+  }, [state.success, router]);
+
   if (!user) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Simulate submission flow
-    router.push("/employee/submissions");
-  };
-
   const renderTimesheetForm = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
+    <div className="space-y-6 relative">
+      <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 mb-6">
+        <p className="text-amber-800 text-sm font-medium flex items-center gap-2">
+          <Clock className="w-5 h-5 shrink-0" />
+          <span><strong>Note:</strong> Pay period cutoff is 4 days before the 15th and last day of each month.</span>
+        </p>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+        <div className="col-span-1 sm:col-span-2">
+          <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
+          <select name="location" className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
+            <option value="">-- Select Target Location Hierarchy --</option>
+            <option value="MB">Location Manager - MB</option>
+            <option value="CSG">Location Manager - CSG</option>
+            <option value="EVG">Location Manager - EVG</option>
+            <option value="EDENS">Location Manager - EDENS</option>
+          </select>
+        </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
-          <input type="date" className="w-full border border-slate-200 rounded-lg p-3 bg-white" required defaultValue="2026-10-02" />
+          <input type="date" name="date" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
+        <div className="hidden sm:block"></div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Time In</label>
+          <input type="time" name="timeIn" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Lunch Duration (Hours)</label>
-          <input type="number" step="0.5" className="w-full border border-slate-200 rounded-lg p-3 bg-white" defaultValue="1" />
+          <label className="block text-sm font-medium text-slate-700 mb-2">Time Out</label>
+          <input type="time" name="timeOut" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Start Time</label>
-          <input type="time" className="w-full border border-slate-200 rounded-lg p-3 bg-white" required defaultValue="08:00" />
+          <label className="block text-sm font-medium text-slate-700 mb-2">Lunch Hour (Duration)</label>
+          <input type="number" step="0.5" name="lunch" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="e.g. 1.0" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">End Time</label>
-          <input type="time" className="w-full border border-slate-200 rounded-lg p-3 bg-white" required defaultValue="16:30" />
+          <label className="block text-sm font-medium text-slate-700 mb-2">Over Time Hours</label>
+          <input type="number" step="0.5" name="ot" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="e.g. 0.0" />
         </div>
-      </div>
-      <div className="bg-brand-50 p-6 rounded-xl border border-brand-100 flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-brand-700 uppercase tracking-widest mb-1">Calculated Duration</p>
-          <p className="text-4xl font-bold text-brand-900">7.5 <span className="text-xl font-medium text-brand-700">Hours</span></p>
+          <label className="block text-sm font-bold text-brand-900 mb-2 flex items-center justify-between">
+            Transfer Time (Hours)
+          </label>
+          <input 
+            type="number" 
+            step="0.5" 
+            name="transferTime" 
+            className="w-full border border-brand-200 rounded-lg p-3 bg-brand-50 font-medium text-brand-900" 
+            placeholder="e.g. 2.0" 
+            onChange={(e) => setHasTransferTime(parseFloat(e.target.value) > 0)}
+          />
+          <p className="text-xs text-brand-600 mt-1 font-medium italic">If entered, copy is routed to Transfer Manager.</p>
         </div>
-        <Clock className="w-12 h-12 text-brand-200" />
+        <div>
+          <label className="block text-sm font-bold text-slate-700 mb-2">Total Hours</label>
+          <input type="number" step="0.5" name="total" className="w-full border-2 border-slate-300 rounded-lg p-3 bg-slate-50 font-bold" placeholder="Required Calculation" />
+        </div>
       </div>
     </div>
   );
 
   const renderTransferForm = () => (
     <div className="space-y-6 relative">
-      <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-50 rounded-full blur-3xl -mx-10 pointer-events-none"></div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Decedent Name</label>
-        <input type="text" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="First Last" required />
+      <div className="grid grid-cols-2 gap-6 relative z-10">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
+          <input type="date" name="date" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Time</label>
+          <input type="time" name="time" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Pick-up Location</label>
-        <input type="text" className="w-full border border-slate-200 rounded-lg p-3 bg-white relative z-10" placeholder="Hospital, Residence, etc." required />
+
+      <div className="relative z-10">
+        <label className="block text-sm font-medium text-slate-700 mb-2">Transfer Team</label>
+        <input type="text" name="team" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Name(s) of personnel involved" />
       </div>
-      
-      <div className="grid grid-cols-2 gap-6 p-6 border border-slate-200 rounded-xl bg-slate-50 relative z-10">
-        <h3 className="col-span-full font-bold text-brand-900 flex items-center gap-2 mb-2">
-          Medical Examiner Protocol
-        </h3>
+
+      <div className="relative z-10">
+        <label className="block text-sm font-medium text-slate-700 mb-2">Type of Transfer</label>
+        <select 
+          name="transferType" 
+          value={transferType}
+          onChange={(e) => setTransferType(e.target.value)}
+          className="w-full border-2 border-brand-200 rounded-lg p-3 bg-brand-50 font-bold text-brand-900 cursor-pointer focus:ring-2 focus:ring-brand-500" 
+        >
+          <option value="Standard">Standard Transfer</option>
+          <option value="M.E.">M.E. (Medical Examiner) Transfer</option>
+          <option value="Non-M.E. Police">Non-M.E. Police Transfer</option>
+        </select>
+        <p className="text-xs text-brand-700 mt-2">All Transfer Records route directly to TRANSFER MANAGER.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-6 relative z-10">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">M.E. Case Number</label>
-          <input type="text" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Required if M.E. involved" />
-        </div>
-        <div></div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Odometer Start</label>
-          <input type="number" className="w-full border border-slate-200 rounded-lg p-3 bg-white" required />
+          <label className="block text-sm font-medium text-slate-700 mb-2">Name of Deceased</label>
+          <input type="text" name="deceasedName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Full legal name" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Odometer End</label>
-          <input type="number" className="w-full border border-slate-200 rounded-lg p-3 bg-white" required />
+          <label className="block text-sm font-medium text-slate-700 mb-2">Place of Death</label>
+          <input type="text" name="placeOfDeath" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Specific hospital, address, etc." />
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Next of Kin Name</label>
+          <input type="text" name="nokName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">NOK Relationship</label>
+          <input type="text" name="nokRelation" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">NOK Contact #</label>
+          <input type="tel" name="nokContact" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
+      </div>
+
+      {(transferType === "M.E." || transferType === "Non-M.E. Police") && (
+        <div className="p-6 border-2 border-slate-200 rounded-xl bg-slate-50 relative z-10 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+          <h3 className="font-bold text-slate-900 flex items-center gap-2">Constabulary Details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Cons't Name</label>
+              <input type="text" name="constName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Officer Name" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Cons't Number</label>
+              <input type="text" name="constNumber" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Badge/ID Number" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {transferType === "M.E." && (
+        <div className="p-6 border-2 border-brand-200 rounded-xl bg-brand-50/50 relative z-10 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+          <h3 className="font-bold text-brand-900 flex items-center gap-2">M.E. Protocol Requirements</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Name of Medical Examiner</label>
+              <input type="text" name="meName" className="w-full border border-brand-200 rounded-lg p-3 bg-white focus:ring-brand-500" placeholder="Authorizing M.E." />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-900 mb-3">Two Transfer Staff Approved?</label>
+              <div className="flex gap-6 mt-1">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="radio" name="twoStaffApproved" value="Yes" className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" />
+                  <span className="text-base font-medium text-slate-800">Yes</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="radio" name="twoStaffApproved" value="No" className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" />
+                  <span className="text-base font-medium text-slate-800">No</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="relative z-10">
+        <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
+        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[100px]" placeholder="Any additional narrative context..."></textarea>
       </div>
     </div>
   );
 
   const renderIncidentForm = () => (
-    <div className="space-y-8">
-      <div className="bg-red-50 p-6 rounded-xl border border-red-200">
-        <h3 className="text-red-900 font-bold mb-2 flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5" /> Severity Rating
+    <div className="space-y-6 relative">
+      <div className="bg-red-50/50 border border-red-100 rounded-xl p-6 mb-8 text-center">
+         <h3 className="text-red-800 font-bold mb-1 flex justify-center items-center gap-2">
+            <AlertTriangle className="w-5 h-5" /> Mandatory Routing
+         </h3>
+         <p className="text-sm text-red-700 font-medium">All incident reports automatically deploy alerts to the assigned OHS MANAGER.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
+        <select name="location" className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
+          <option value="">-- Coordinate with Location --</option>
+          <option value="MB">Location Manager - MB</option>
+          <option value="CSG">Location Manager - CSG</option>
+          <option value="EVG">Location Manager - EVG</option>
+          <option value="EDENS">Location Manager - EDENS</option>
+        </select>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Date and Time of Incident</label>
+          <input type="datetime-local" name="incidentDate" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Location of Incident</label>
+          <input type="text" name="incidentLocation" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Address, Room, or Vehicle Designation" />
+        </div>
+      </div>
+
+      <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+        <h3 className="text-slate-900 font-bold mb-3 flex items-center gap-2">
+           Nature of Incident
         </h3>
-        <div className="flex gap-4 mt-4">
-          <label className="flex-1 cursor-pointer">
-            <input type="radio" name="severity" className="peer sr-only" value="minor" />
-            <div className="text-center p-3 rounded-lg border-2 border-slate-200 bg-white peer-checked:border-yellow-500 peer-checked:bg-yellow-50 text-slate-600 peer-checked:text-yellow-800 font-semibold transition-all">Minor</div>
+        <div className="grid grid-cols-3 gap-4">
+          <label className="w-full cursor-pointer hover:-translate-y-1 transition-transform">
+            <input type="radio" name="nature" className="peer sr-only" value="Injury" />
+            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-red-500 peer-checked:bg-red-50 text-slate-600 peer-checked:text-red-800 font-bold transition-all shadow-sm">INJURY</div>
           </label>
-          <label className="flex-1 cursor-pointer">
-            <input type="radio" name="severity" className="peer sr-only" value="moderate" defaultChecked />
-            <div className="text-center p-3 rounded-lg border-2 border-slate-200 bg-white peer-checked:border-orange-500 peer-checked:bg-orange-50 text-slate-600 peer-checked:text-orange-800 font-semibold transition-all">Moderate</div>
+          <label className="w-full cursor-pointer hover:-translate-y-1 transition-transform">
+            <input type="radio" name="nature" className="peer sr-only" value="Damage" />
+            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-orange-500 peer-checked:bg-orange-50 text-slate-600 peer-checked:text-orange-800 font-bold transition-all shadow-sm">DAMAGE</div>
           </label>
-          <label className="flex-1 cursor-pointer">
-            <input type="radio" name="severity" className="peer sr-only" value="critical" />
-            <div className="text-center p-3 rounded-lg border-2 border-slate-200 bg-white peer-checked:border-red-500 peer-checked:bg-red-50 text-slate-600 peer-checked:text-red-800 font-semibold transition-all">Critical</div>
+          <label className="w-full cursor-pointer hover:-translate-y-1 transition-transform">
+            <input type="radio" name="nature" className="peer sr-only" value="Legal" />
+            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-purple-500 peer-checked:bg-purple-50 text-slate-600 peer-checked:text-purple-800 font-bold transition-all shadow-sm">LEGAL</div>
           </label>
         </div>
       </div>
       
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Incident Narrative Context</label>
-        <textarea className="w-full border border-slate-200 rounded-lg p-4 bg-white" rows={4} placeholder="Describe exactly what occurred..." required></textarea>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Incident Narrative & Notes</label>
+        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white" rows={6} placeholder="Describe exactly what occurred in absolute objective detail..."></textarea>
       </div>
 
-      <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
-        <span className="text-brand-600 font-medium text-sm">Click to upload photo evidence (JPG/PNG)</span>
-      </div>
-
-      <div className="flex items-start gap-3 pt-4 border-t border-slate-100">
-        <input type="checkbox" id="certify" className="mt-1 w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 cursor-pointer" required />
-        <label htmlFor="certify" className="text-sm text-slate-600 cursor-pointer">
+      <div className="flex items-start gap-4 pt-6 border-t border-slate-100">
+        <input type="checkbox" name="certified" id="certify" className="mt-1 w-5 h-5 rounded text-brand-600 focus:ring-brand-500 border-slate-300 cursor-pointer" />
+        <label htmlFor="certify" className="text-sm text-slate-700 font-medium leading-relaxed max-w-2xl cursor-pointer">
           I certify that the information provided is truthful and accurate to the best of my knowledge. Submitting false reports is a violation of the Stewardship & Ethics Handbook.
         </label>
       </div>
@@ -147,27 +287,30 @@ export default function NewSubmissionPage({ params }: { params: { type: string }
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-12 animate-in fade-in duration-500">
+    <div className="max-w-3xl mx-auto pb-16 animate-in fade-in duration-500">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-brand-900 tracking-tight">{getTitle()}</h1>
-        <p className="text-slate-500 mt-2 text-lg">Complete all required fields below to submit.</p>
+        <p className="text-slate-500 mt-2 text-lg">Complete any applicable fields below to submit to management.</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-6 md:p-8">
+      <form action={formAction} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        {state.error && (
+            <div className="bg-red-50 p-4 border-b border-red-200 text-red-600 text-sm font-bold">
+               {state.error}
+            </div>
+        )}
+        
+        <div className="p-6 md:p-10">
           {getFormContent()}
         </div>
 
         <div className="p-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-          <button type="button" className="text-slate-500 font-medium px-4 py-2 hover:bg-slate-200 rounded-lg transition-colors">
+          <button type="button" onClick={() => router.back()} disabled={isPending} className="text-slate-500 font-semibold px-5 py-2.5 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50">
             Cancel
           </button>
           <div className="flex items-center gap-3">
-            <button type="button" className="flex items-center gap-2 text-slate-700 font-medium px-4 py-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
-              <Save className="w-4 h-4" /> Save Draft
-            </button>
-            <button type="submit" className="flex items-center gap-2 text-white font-medium px-6 py-2 bg-brand-900 rounded-lg hover:bg-brand-800 transition-colors shadow-sm">
-              <Send className="w-4 h-4" /> Submit Record
+            <button type="submit" disabled={isPending} className="flex items-center gap-2 text-white font-semibold px-8 py-3 bg-brand-900 rounded-xl hover:bg-brand-800 transition-colors shadow-md hover:shadow-lg transform active:scale-95 duration-150 disabled:opacity-50">
+              <Send className="w-5 h-5" /> {isPending ? "Submitting securely..." : "Submit Record"}
             </button>
           </div>
         </div>

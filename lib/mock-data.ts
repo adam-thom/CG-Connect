@@ -1,10 +1,28 @@
-export type Role = "employee" | "manager";
+export type Role = "employee" | "manager" | "admin";
+
+export const MANAGER_ROLES = [
+  "LOCATION MANAGER - MB",
+  "LOCATION MANAGER - CSG",
+  "LOCATION MANAGER - EVG",
+  "LOCATION MANAGER - EDENS",
+  "TRANSFER MANAGER",
+  "OHS MANAGER",
+  "REGIONAL MANAGER"
+];
+
+export const EMPLOYEE_ROLES = [
+  "FUNERAL DIRECTOR",
+  "TRANSFER PERSONNEL",
+  "PART TIME EMPLOYEE",
+  "SUPPORT STAFF"
+];
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: Role;
+  assignedRoles: string[];
   avatarUrl?: string;
   department: string;
   title: string;
@@ -16,6 +34,7 @@ export const MOCK_USERS: User[] = [
     name: "Sarah Jenkins",
     email: "sarah@caring.com",
     role: "employee",
+    assignedRoles: ["FUNERAL DIRECTOR"],
     department: "Operations",
     title: "Funeral Director",
   },
@@ -24,6 +43,7 @@ export const MOCK_USERS: User[] = [
     name: "Julian H. Sterling",
     email: "julian@caring.com",
     role: "employee",
+    assignedRoles: ["TRANSFER PERSONNEL"],
     department: "Logistics",
     title: "Transfer Specialist",
   },
@@ -32,9 +52,19 @@ export const MOCK_USERS: User[] = [
     name: "Elena Moretti",
     email: "elena@caring.com",
     role: "manager",
+    assignedRoles: ["REGIONAL MANAGER", "OHS MANAGER"],
     department: "Administration",
     title: "Regional Director",
   },
+  {
+    id: "ADM-001",
+    name: "Admin User",
+    email: "admin@caring.com",
+    role: "admin",
+    assignedRoles: [],
+    department: "IT",
+    title: "System Administrator",
+  }
 ];
 
 export type SubmissionStatus = "draft" | "pending" | "revision-required" | "finalized" | "approved";

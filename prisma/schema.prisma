@@ -1,0 +1,204 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String?
+  role         String  @default("employee") // "employee", "manager", "admin"
+  department   String?
+  title        String?
+  avatarUrl    String?
+  passwordHash String?
+
+  tags Tag[] @relation("UserTags")
+
+  // Submissions created by this user
+  timesheets      Timesheet[]      @relation("TimesheetSubmitter")
+  transferRecords TransferRecord[] @relation("TransferSubmitter")
+  incidentReports IncidentReport[] @relation("IncidentSubmitter")
+  timeOffRequests TimeOffRequest[] @relation("TimeOffSubmitter")
+  fundingRequests FundingRequest[] @relation("FundingSubmitter")
+
+  // Authored interactions
+  comments     Comment[]  @relation("CommentAuthor")
+  uploadedDocs Document[] @relation("DocumentUploader")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  name String @unique // e.g. "MB Manager", "ADMIN", "MB Employee"
+  type String // "MANAGER", "EMPLOYEE", "ADDITIONAL"
+
+  users User[] @relation("UserTags")
+
+  // Many-To-Many Form Assignments
+  assignedTimesheets      Timesheet[]      @relation("TimesheetTagApprovers")
+  assignedTransferRecords TransferRecord[] @relation("TransferTagApprovers")
+  assignedIncidentReports IncidentReport[] @relation("IncidentTagApprovers")
+  assignedTimeOff         TimeOffRequest[] @relation("TimeOffTagApprovers")
+  assignedFunding         FundingRequest[] @relation("FundingTagApprovers")
+}
+
+model Document {
+  id         String @id @default(cuid())
+  name       String
+  type       String // "pdf", "docx", "xlsx"
+  category   String // "POLICY MANUALS", "STANDARDS OF PRACTICE", etc.
+  sizeBytes  Int
+  sharedWith String // "all", "managers", "specific"
+
+  authorId String?
+  author   User?   @relation("DocumentUploader", fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id      String @id @default(cuid())
+  content String
+
+  authorId String
+  author   User   @relation("CommentAuthor", fields: [authorId], references: [id])
+
+  // Optional relations to map this comment to a specific form payload
+  timesheetId String?
+  timesheet   Timesheet? @relation(fields: [timesheetId], references: [id])
+
+  transferRecordId String?
+  transferRecord   TransferRecord? @relation(fields: [transferRecordId], references: [id])
+
+  incidentReportId String?
+  incidentReport   IncidentReport? @relation(fields: [incidentReportId], references: [id])
+
+  timeOffRequestId String?
+  timeOffRequest   TimeOffRequest? @relation(fields: [timeOffRequestId], references: [id])
+
+  fundingRequestId String?
+  fundingRequest   FundingRequest? @relation(fields: [fundingRequestId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Timesheet {
+  id          String @id @default(cuid())
+  submitterId String
+  submitter   User   @relation("TimesheetSubmitter", fields: [submitterId], references: [id])
+
+  assignedTags Tag[] @relation("TimesheetTagApprovers")
+
+  date         DateTime?
+  timeIn       String?
+  timeOut      String?
+  lunchHour    Float?
+  overTime     Float?
+  transferTime Float?
+  totalHours   Float?
+
+  status   String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TransferRecord {
+  id          String @id @default(cuid())
+  submitterId String
+  submitter   User   @relation("TransferSubmitter", fields: [submitterId], references: [id])
+
+  assignedTags Tag[] @relation("TransferTagApprovers")
+
+  date             DateTime?
+  time             String?
+  team             String?
+  transferType     String? // "Standard", "M.E.", "Non-M.E. Police"
+  deceasedName     String?
+  placeOfDeath     String?
+  nokName          String?
+  nokRelation      String?
+  nokContact       String?
+  constName        String?
+  constNumber      String?
+  meName           String?
+  twoStaffApproved String? // Changed to String? since form submits 'Yes' or 'No'. DB type previously Boolean?
+  notes            String?
+
+  status   String    @default("PENDING")
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IncidentReport {
+  id          String @id @default(cuid())
+  submitterId String
+  submitter   User   @relation("IncidentSubmitter", fields: [submitterId], references: [id])
+
+  assignedTags Tag[] @relation("IncidentTagApprovers")
+
+  incidentDate     DateTime?
+  incidentLocation String?
+  nature           String? // "Injury", "Damage", "Legal"
+  notes            String?
+  certified        String? // Checkbox value can be "on" or null
+
+  status   String    @default("PENDING")
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TimeOffRequest {
+  id          String @id @default(cuid())
+  submitterId String
+  submitter   User   @relation("TimeOffSubmitter", fields: [submitterId], references: [id])
+
+  assignedTags Tag[] @relation("TimeOffTagApprovers")
+
+  startDate DateTime?
+  endDate   DateTime?
+  reason    String?
+
+  status   String    @default("PENDING")
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FundingRequest {
+  id          String @id @default(cuid())
+  submitterId String
+  submitter   User   @relation("FundingSubmitter", fields: [submitterId], references: [id])
+
+  assignedTags Tag[] @relation("FundingTagApprovers")
+
+  amount     Float?
+  purpose    String?
+  dateNeeded DateTime?
+
+  status   String    @default("PENDING")
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,17 +1,25 @@
 "use client";
 import { useAuth } from "@/lib/auth-context";
-import { Clock, AlertTriangle, FileText, ArrowRight, Activity, CalendarDays } from "lucide-react";
+import { Clock, AlertTriangle, FileText, ArrowRight, Activity, CalendarDays, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { MOCK_SUBMISSIONS } from "@/lib/mock-data";
+import { fetchMySubmissions } from "@/app/actions/submissions";
 import { StatusBadge } from "@/components/StatusBadge";
+import { useState, useEffect } from "react";
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
+  const [mySubmissions, setMySubmissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMySubmissions().then(data => {
+      setMySubmissions(data);
+      setIsLoading(false);
+    });
+  }, []);
   
   if (!user) return null;
 
-  // Filter only user's submissions
-  const mySubmissions = MOCK_SUBMISSIONS.filter(s => s.submitterId === user.id);
   const actionRequired = mySubmissions.filter(s => ["revision-required"].includes(s.status));
   const recent = mySubmissions.slice(0, 3);
 
@@ -126,8 +134,10 @@ export default function EmployeeDashboard() {
             <h2 className="text-lg font-semibold text-brand-900">Recent Activity</h2>
             <Link href="/employee/submissions" className="text-sm font-medium text-brand-600 hover:text-brand-800">View All</Link>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {recent.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[150px]">
+            {isLoading ? (
+               <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-500" /></div>
+            ) : recent.length === 0 ? (
               <div className="p-6 text-center text-slate-500 text-sm">No recent activity.</div>
             ) : (
               <ul className="divide-y divide-slate-100">

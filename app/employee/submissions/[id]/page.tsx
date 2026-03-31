@@ -2,9 +2,10 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { SubmissionDetail } from "@/components/SubmissionDetail";
-import { MOCK_SUBMISSIONS } from "@/lib/mock-data";
+import { fetchSubmissionById } from "@/app/actions/submissions";
 import { notFound } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 // Helper to format camelCase keys to Sentance Case
 const formatKey = (key: string) => {
@@ -15,12 +16,18 @@ const formatKey = (key: string) => {
 export default function SubmissionViewPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
   
-  // We use state to allow updating status/comments purely in UI for the demo
-  const [submission, setSubmission] = useState(() => {
-    return MOCK_SUBMISSIONS.find(s => s.id === params.id);
-  });
+  const [submission, setSubmission] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSubmissionById(params.id).then(data => {
+      setSubmission(data);
+      setIsLoading(false);
+    });
+  }, [params.id]);
 
   if (!user) return null;
+  if (isLoading) return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-500" /></div>;
   if (!submission) return notFound();
 
   // Basic check if employee can view this
@@ -31,7 +38,7 @@ export default function SubmissionViewPage({ params }: { params: { id: string } 
   const isEditable = user.role === "employee" && submission.status === "revision-required";
 
   const handleStatusChange = (newStatus: string) => {
-    setSubmission(prev => prev ? { ...prev, status: newStatus as any } : prev);
+    setSubmission((prev: any) => prev ? { ...prev, status: newStatus as any } : prev);
   };
 
   const handleAddComment = (content: string) => {
@@ -41,7 +48,7 @@ export default function SubmissionViewPage({ params }: { params: { id: string } 
       content,
       createdAt: new Date().toISOString()
     };
-    setSubmission(prev => prev ? { 
+    setSubmission((prev: any) => prev ? { 
       ...prev, 
       feedbackThread: [...prev.feedbackThread, newComment] 
     } : prev);

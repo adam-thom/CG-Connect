@@ -1,9 +1,9 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { MOCK_SUBMISSIONS, MOCK_USERS } from "@/lib/mock-data";
-import { CheckSquare, Search, Filter } from "lucide-react";
-import { useState } from "react";
+import { fetchManagerQueue } from "@/app/actions/submissions";
+import { CheckSquare, Search, Filter, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -11,13 +11,17 @@ import { cn } from "@/lib/utils";
 export default function ManagerSubmissionsQueue() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("pending");
+  const [allSubmissions, setAllSubmissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchManagerQueue().then(data => {
+      setAllSubmissions(data);
+      setIsLoading(false);
+    });
+  }, []);
 
   if (!user) return null;
-
-  const allSubmissions = MOCK_SUBMISSIONS.map(sub => {
-    const submitter = MOCK_USERS.find(u => u.id === sub.submitterId);
-    return { ...sub, submitterName: submitter?.name || sub.submitterId };
-  }).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   
   const filteredData = allSubmissions.filter(s => {
     if (filter === "all") return true;
@@ -85,7 +89,13 @@ export default function ManagerSubmissionsQueue() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredData.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-500" />
+                  </td>
+                </tr>
+              ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-500 italic">
                     Queue is empty for the active filter.

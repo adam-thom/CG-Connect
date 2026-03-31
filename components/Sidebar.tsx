@@ -13,7 +13,8 @@ import {
   Users,
   CheckSquare,
   PlusCircle,
-  User as UserIcon
+  User as UserIcon,
+  Route
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -23,6 +24,7 @@ export function Sidebar() {
   if (!user) return null;
 
   const isManager = user.role === 'manager';
+  const isAdmin = user.role === 'admin';
 
   const employeeLinks = [
     { name: 'Dashboard', href: '/employee/dashboard', icon: LayoutDashboard },
@@ -41,18 +43,24 @@ export function Sidebar() {
     { name: 'Staff Profiles', href: '/manager/staff', icon: Users },
   ];
 
-  const links = isManager ? managerLinks : employeeLinks;
+  const adminLinks = [
+    { name: 'Admin Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Assign Roles', href: '/admin/assign-roles', icon: Users },
+    { name: 'Form Routing', href: '/admin/form-routing', icon: Route },
+  ];
+
+  const links = isAdmin ? adminLinks : isManager ? managerLinks : employeeLinks;
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col z-20">
       <div className="h-24 flex items-center px-6 border-b border-slate-100 shrink-0 bg-brand-900">
-        <Link href={isManager ? "/manager/dashboard" : "/employee/dashboard"} className="block w-full">
+        <Link href={isAdmin ? "/admin/dashboard" : isManager ? "/manager/dashboard" : "/employee/dashboard"} className="block w-full">
           <Image src="/2026-CG-Branding-optomized.png" alt="The Caring Group" width={220} height={55} className="object-contain" />
         </Link>
       </div>
 
       <div className="p-5 flex-1 overflow-y-auto">
-        {!isManager && (
+        {!isManager && !isAdmin && (
           <div className="mb-8">
             <button className="w-full bg-accent-600 hover:bg-accent-700 text-white rounded-xl py-2.5 px-4 flex items-center justify-center gap-2 font-medium transition-colors shadow-sm focus:ring-2 focus:ring-accent-500 focus:ring-offset-2">
               <PlusCircle className="w-5 h-5" />

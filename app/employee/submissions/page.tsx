@@ -1,21 +1,28 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { MOCK_SUBMISSIONS } from "@/lib/mock-data";
+import { fetchMySubmissions } from "@/app/actions/submissions";
 import { StatusBadge } from "@/components/StatusBadge";
 import Link from "next/link";
-import { Search, Filter, ArrowRight, FilePlus } from "lucide-react";
-import { useState } from "react";
+import { Search, Filter, ArrowRight, FilePlus, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 export default function EmployeeSubmissions() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("all");
+  const [mySubmissions, setMySubmissions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMySubmissions().then(data => {
+      setMySubmissions(data);
+      setIsLoading(false);
+    });
+  }, []);
 
   if (!user) return null;
 
-  const mySubmissions = MOCK_SUBMISSIONS.filter(s => s.submitterId === user.id);
-  
   const filteredData = mySubmissions.filter(s => {
     if (filter === "all") return true;
     return s.status === filter;
@@ -29,10 +36,10 @@ export default function EmployeeSubmissions() {
           <p className="text-slate-500 mt-2 text-lg">Track the status of your records and requests.</p>
         </div>
         <div>
-          <button className="bg-accent-600 hover:bg-accent-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+          <Link href="/employee/dashboard" className="bg-accent-600 hover:bg-accent-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
             <FilePlus className="w-5 h-5" />
             New Submission
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -81,7 +88,13 @@ export default function EmployeeSubmissions() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {filteredData.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
+                    <Loader2 className="w-8 h-8 animate-spin mx-auto text-brand-500" />
+                  </td>
+                </tr>
+              ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 italic">
                     No submissions found for the selected filter.

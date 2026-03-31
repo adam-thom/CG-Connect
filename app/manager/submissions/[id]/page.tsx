@@ -2,9 +2,10 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { SubmissionDetail } from "@/components/SubmissionDetail";
-import { MOCK_SUBMISSIONS } from "@/lib/mock-data";
+import { fetchSubmissionById, updateSubmissionStatusAdmin } from "@/app/actions/submissions";
 import { notFound } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 const formatKey = (key: string) => {
   const result = key.replace(/([A-Z])/g, " $1");
@@ -13,12 +14,18 @@ const formatKey = (key: string) => {
 
 export default function ManagerSubmissionViewPage({ params }: { params: { id: string } }) {
   const { user } = useAuth();
-  
-  const [submission, setSubmission] = useState(() => {
-    return MOCK_SUBMISSIONS.find(s => s.id === params.id);
-  });
+  const [submission, setSubmission] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSubmissionById(params.id).then(data => {
+      setSubmission(data);
+      setIsLoading(false);
+    });
+  }, [params.id]);
 
   if (!user) return null;
+  if (isLoading) return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-500" /></div>;
   if (!submission) return notFound();
 
   // Basic check to ensure Manager
@@ -26,8 +33,13 @@ export default function ManagerSubmissionViewPage({ params }: { params: { id: st
     return <div className="p-8 text-center text-red-600">Restricted access area.</div>;
   }
 
-  const handleStatusChange = (newStatus: string) => {
-    setSubmission(prev => prev ? { ...prev, status: newStatus as any } : prev);
+  const handleStatusChange = async (newStatus: string) => {
+    try {
+      await updateSubmissionStatusAdmin(submission.id, submission.type, newStatus);
+      setSubmission((prev: any) => prev ? { ...prev, status: newStatus as any } : prev);
+    } catch (e) {
+      alert("Failed to update status");
+    }
   };
 
   const handleAddComment = (content: string) => {
@@ -37,7 +49,7 @@ export default function ManagerSubmissionViewPage({ params }: { params: { id: st
       content,
       createdAt: new Date().toISOString()
     };
-    setSubmission(prev => prev ? { 
+    setSubmission((prev: any) => prev ? { 
       ...prev, 
       feedbackThread: [...prev.feedbackThread, newComment] 
     } : prev);
