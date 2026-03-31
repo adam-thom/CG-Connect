@@ -18,11 +18,20 @@ export default function ManagerSubmissionViewPage({ params }: { params: { id: st
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchSubmissionById(params.id).then(data => {
-      setSubmission(data);
-      setIsLoading(false);
-    });
-  }, [params.id]);
+    const loadSubmission = async () => {
+       try {
+          const resolvedParams = await params;
+          if (!resolvedParams?.id) return;
+          const data = await fetchSubmissionById(resolvedParams.id);
+          setSubmission(data);
+       } catch (error) {
+          console.error("Failed to load submission:", error);
+       } finally {
+          setIsLoading(false);
+       }
+    };
+    loadSubmission();
+  }, [params]);
 
   if (!user) return null;
   if (isLoading) return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-500" /></div>;

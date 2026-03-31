@@ -39,14 +39,14 @@ export function Sidebar() {
     { name: 'Dept Schedule', href: '/manager/schedule', icon: CalendarDays },
     { name: 'Timesheets', href: '/manager/timesheets', icon: CheckSquare },
     { name: 'Review Queue', href: '/manager/submissions', icon: FileText },
-    { name: 'Document Vault', href: '/manager/documents', icon: FolderOpen },
+    { name: 'Document Vault', href: '/manager/docs', icon: FolderOpen },
     { name: 'Staff Profiles', href: '/manager/staff', icon: Users },
   ];
 
   const adminLinks = [
-    { name: 'Admin Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'Assign Roles', href: '/admin/assign-roles', icon: Users },
-    { name: 'Form Routing', href: '/admin/form-routing', icon: Route },
+    { name: 'Admin Console', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Staff Directory', href: '/admin/users', icon: Users },
+    { name: 'Document Control', href: '/admin/docs', icon: FolderOpen },
   ];
 
   const links = isAdmin ? adminLinks : isManager ? managerLinks : employeeLinks;

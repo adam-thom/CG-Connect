@@ -41,7 +41,7 @@ export function EmployeeDocuments() {
               
               <div className="flex items-center justify-between mt-8">
                 <span className="text-xs font-bold uppercase tracking-widest opacity-80">{doc.publishedAt}</span>
-                <button className={`px-5 py-2 rounded-full font-bold text-sm shadow-sm transition-transform active:scale-95 ${doc.btnColor}`}>
+                <button onClick={() => alert(`Opening ${doc.title}...`)} className={`px-5 py-2 rounded-full font-bold text-sm shadow-sm transition-transform active:scale-95 ${doc.btnColor}`}>
                   {doc.buttonText}
                 </button>
               </div>
@@ -69,10 +69,10 @@ export function EmployeeDocuments() {
                   <p className="text-xs text-slate-500 font-medium mt-1">{doc.subtext}</p>
                 </div>
                 <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                   <button className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                   <button onClick={() => alert(`Viewing ${doc.title} safely.`)} className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                      <Eye className="w-4 h-4" />
                    </button>
-                   <button className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                   <button onClick={() => alert(`${doc.title} downloaded to your local device.`)} className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                      <Download className="w-4 h-4" />
                    </button>
                 </div>
@@ -93,10 +93,10 @@ export function EmployeeDocuments() {
                   <p className="text-xs text-slate-500 font-medium mt-1">{doc.subtext}</p>
                 </div>
                 <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                   <button className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                   <button onClick={() => alert(`Viewing ${doc.title} safely.`)} className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                      <Eye className="w-4 h-4" />
                    </button>
-                   <button className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                   <button onClick={() => alert(`${doc.title} downloaded to your local device.`)} className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                      <Download className="w-4 h-4" />
                    </button>
                 </div>
@@ -117,10 +117,10 @@ export function EmployeeDocuments() {
                   <p className="text-xs text-slate-500 font-medium mt-1">{doc.subtext}</p>
                 </div>
                 <div className="flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                   <button className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                   <button onClick={() => alert(`Viewing ${doc.title} safely.`)} className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                      <Eye className="w-4 h-4" />
                    </button>
-                   <button className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
+                   <button onClick={() => alert(`${doc.title} downloaded to your local device.`)} className="p-2 hover:bg-slate-100 rounded-full text-slate-600 transition-colors">
                      <Download className="w-4 h-4" />
                    </button>
                 </div>

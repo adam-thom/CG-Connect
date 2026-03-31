@@ -1,18 +1,20 @@
 "use client";
 
 import { useAuth } from '@/lib/auth-context';
-import { Search, Bell, LogOut, LayoutDashboard, Briefcase } from 'lucide-react';
+import { Search, Bell, LogOut, Loader2 } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTransition } from 'react';
+import { switchDevRole } from '@/app/actions/dev';
 
 export function TopBar() {
   const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
-  if (!user) return null;
+  const [isPending, startTransition] = useTransition();
 
-  const isManagerView = pathname?.startsWith('/manager');
+  if (!user) return null;
 
   return (
     <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10 w-full animate-in slide-in-from-top-4 duration-500">
@@ -36,22 +38,30 @@ export function TopBar() {
 
       <div className="ml-4 flex items-center gap-5">
         
-        {user.role === 'admin' && (
-           <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-xl mr-2 border border-slate-200 shadow-inner">
-             <button 
-               onClick={() => router.push('/employee/dashboard')}
-               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${!isManagerView ? 'bg-white shadow-sm text-brand-900 border border-slate-200/60' : 'text-slate-500 hover:text-slate-700'}`}
+        {/* DEV ROLE SLIDER */}
+        <div className="hidden md:flex items-center bg-slate-100/80 p-1.5 rounded-full mr-2 border border-slate-200/60 shadow-inner relative">
+           {isPending && (
+             <div className="absolute -left-6 top-1/2 -translate-y-1/2">
+                <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
+             </div>
+           )}
+           {['employee', 'manager', 'admin'].map(r => (
+             <button
+               key={r}
+               disabled={isPending}
+               onClick={() => {
+                 if (user.role !== r) {
+                    startTransition(() => {
+                       switchDevRole(r);
+                    });
+                 }
+               }}
+               className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all duration-300 ${user.role === r ? 'bg-white shadow-sm text-brand-900 border-slate-200/60' : 'text-slate-500 hover:text-slate-800'}`}
              >
-               <Briefcase className="w-3.5 h-3.5" /> Employee View
+               {r}
              </button>
-             <button 
-               onClick={() => router.push('/manager/dashboard')}
-               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isManagerView ? 'bg-white shadow-sm text-brand-900 border border-slate-200/60' : 'text-slate-500 hover:text-slate-700'}`}
-             >
-               <LayoutDashboard className="w-3.5 h-3.5" /> Manager View
-             </button>
-           </div>
-        )}
+           ))}
+        </div>
 
         <button className="text-slate-400 hover:text-brand-900 relative p-1 transition-colors rounded-full hover:bg-slate-50">
           <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-accent-500 ring-2 ring-white" />
