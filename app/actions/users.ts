@@ -30,7 +30,7 @@ export async function fetchFuneralDirectors() {
     where: {
       tags: {
         some: {
-          name: 'Funeral Director'
+          name: 'FUNERAL DIRECTOR'
         }
       }
     },

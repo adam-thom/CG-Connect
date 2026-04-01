@@ -39,6 +39,7 @@ export async function createDocumentCategory(prevState: any, formData: FormData)
     await fs.mkdir(folderPath, { recursive: true });
 
     revalidatePath('/admin/docs');
+    revalidatePath('/manager/docs');
     revalidatePath('/employee/docs');
     return { success: true };
   } catch (error) {
@@ -57,6 +58,7 @@ export async function deleteDocumentCategory(categoryId: string) {
       where: { id: categoryId }
     });
     revalidatePath('/admin/docs');
+    revalidatePath('/manager/docs');
     revalidatePath('/employee/docs');
     return { success: true };
   } catch (err) {
@@ -80,16 +82,23 @@ export async function fetchAllDocuments() {
     });
   }
 
-  // If not admin, only fetch documents that share tags with current user
+  // If not admin, only fetch documents that share tags with current user or authored by them
   return prisma.document.findMany({
     where: {
-      visibilityTags: {
-        some: {
-          id: {
-            in: currentUser.tags.map(t => t.id)
+      OR: [
+        {
+          visibilityTags: {
+            some: {
+              id: {
+                in: currentUser.tags.map(t => t.id)
+              }
+            }
           }
+        },
+        {
+          authorId: currentUser.id
         }
-      }
+      ]
     },
     include: {
       category: true,
@@ -116,6 +125,7 @@ export async function deleteDocument(documentId: string) {
     }
     await prisma.document.delete({ where: { id: documentId } });
     revalidatePath('/admin/docs');
+    revalidatePath('/manager/docs');
     revalidatePath('/employee/docs');
     return { success: true };
   } catch (err) {
@@ -172,6 +182,7 @@ export async function createDocument(prevState: any, formData: FormData) {
     });
 
     revalidatePath('/admin/docs');
+    revalidatePath('/manager/docs');
     revalidatePath('/employee/docs');
     return { success: true };
   } catch (error) {
@@ -241,7 +252,8 @@ export async function updateDocument(documentId: string, formData: FormData) {
     data: updateData
   });
 
-  revalidatePath('/admin/docs');
-  revalidatePath('/employee/docs');
-  return { success: true };
+    revalidatePath('/admin/docs');
+    revalidatePath('/employee/docs');
+    revalidatePath('/manager/docs');
+    return { success: true };
 }

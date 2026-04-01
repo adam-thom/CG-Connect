@@ -32,9 +32,9 @@ export function AdminDocuments({ documents, categories, tags }: { documents: any
   };
 
   const filteredRegistry = documents.filter(doc => 
-    doc.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    doc.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    doc.category.name.toLowerCase().includes(searchQuery.toLowerCase())
+    doc.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    doc.type?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    doc.category?.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const selectedDoc = documents.find(d => d.id === selectedDocId);

@@ -10,17 +10,17 @@ import { join } from 'path';
 async function saveFile(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
-  
+
   const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
   const uploadDir = join(process.cwd(), 'public', 'uploads');
-  
+
   try {
     await mkdir(uploadDir, { recursive: true });
-  } catch (err) {}
-  
+  } catch (err) { }
+
   const path = join(uploadDir, fileName);
   await writeFile(path, buffer);
-  
+
   return `/uploads/${fileName}`;
 }
 
@@ -56,8 +56,8 @@ export async function submitCapExRequest(formData: FormData) {
   }
 
   const existingRequests = await prisma.capExRequest.findMany({
-    where: { 
-      location, 
+    where: {
+      location,
       status: { in: ['Approved', 'Pending', 'Revision Requested'] },
       createdAt: { gte: budgetData.lastResetAt }
     },
@@ -103,7 +103,7 @@ export async function updateCapExRequest(id: string, formData: FormData) {
 
   const existing = await prisma.capExRequest.findUnique({ where: { id } });
   if (!existing || existing.submitterId !== user.id) return { error: 'Not found or unauthorized' };
-  
+
   if (existing.status !== 'Pending' && existing.status !== 'Revision Requested') {
     return { error: 'Cannot edit an approved or denied request' };
   }
@@ -117,14 +117,14 @@ export async function updateCapExRequest(id: string, formData: FormData) {
   const budgetData = await prisma.locationBudget.findUnique({
     where: { location }
   });
-  
+
   if (!budgetData || budgetData.budget <= 0) {
     return { error: `No budget has been assigned for ${location}.` };
   }
 
   const existingRequests = await prisma.capExRequest.findMany({
-    where: { 
-      location, 
+    where: {
+      location,
       status: { in: ['Approved', 'Pending', 'Revision Requested'] },
       id: { not: id },
       createdAt: { gte: budgetData.lastResetAt }
@@ -144,7 +144,7 @@ export async function updateCapExRequest(id: string, formData: FormData) {
   let quotesStr = existing.quotes;
   try {
     const oldQuotes = JSON.parse(existing.quotes);
-    
+
     let path1 = oldQuotes[0]?.url || "";
     let name1 = oldQuotes[0]?.name || "";
     if (file1 && file1.size > 0) {
@@ -175,7 +175,7 @@ export async function updateCapExRequest(id: string, formData: FormData) {
         location,
         amount,
         quotes: quotesStr,
-        status: 'Pending', 
+        status: 'Pending',
       }
     });
 
@@ -229,7 +229,7 @@ export async function setLocationBudget(location: string, budget: number) {
 export async function addCapExComment(id: string, content: string) {
   const user = await getSessionUser();
   if (!user) return { error: 'Unauthorized' };
-  
+
   if (!content || content.trim() === '') return { error: 'Comment cannot be blank.' };
 
   try {
