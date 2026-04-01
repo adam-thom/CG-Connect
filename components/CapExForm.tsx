@@ -82,11 +82,11 @@ export function CapExForm({ existingData }: { existingData?: any }) {
                   required 
                   className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium appearance-none"
               >
-                  <option value="" disabled>Select assignment locale...</option>
-                  <option value="Headquarters">Headquarters</option>
-                  <option value="North Branch">North Branch</option>
-                  <option value="East Logistics">East Logistics</option>
-                  <option value="South Processing">South Processing</option>
+                  <option value="" disabled>Select location...</option>
+                  <option value="MB">MB</option>
+                  <option value="CSG">CSG</option>
+                  <option value="EVG">EVG</option>
+                  <option value="EDENS">EDENS</option>
               </select>
             </div>
           </div>

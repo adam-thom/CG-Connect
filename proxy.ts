@@ -7,14 +7,14 @@ const encodedKey = new TextEncoder().encode(secretKey);
 
 export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  
+
   // Exclude static assets, core routing loops, and login
   if (path === '/login' || path.startsWith('/_next') || path.startsWith('/api') || path === '/' || path.includes('.')) {
     return NextResponse.next();
   }
 
   const session = req.cookies.get('session')?.value;
-  
+
   if (!session) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
@@ -25,22 +25,22 @@ export async function proxy(req: NextRequest) {
     });
 
     const role = (payload.role as string)?.toLowerCase() || '';
-    
+
     // Strict Silo Guards
     // If you are trying to view employee files:
     if (path.startsWith('/employee')) {
-        if (role !== 'employee' && role !== 'admin') {
-             // Managers get bounced safely to their manager dashboard
-             return NextResponse.redirect(new URL('/manager/dashboard', req.url));
-        }
+      if (role !== 'employee' && role !== 'admin') {
+        // Managers get bounced safely to their manager dashboard
+        return NextResponse.redirect(new URL('/manager/dashboard', req.url));
+      }
     }
-    
+
     // If you are trying to view manager files:
     if (path.startsWith('/manager')) {
-       if (role !== 'manager' && role !== 'admin') {
-            // Employees get bounced safely to employee dashboard
-            return NextResponse.redirect(new URL('/employee/dashboard', req.url));
-       }
+      if (role !== 'manager' && role !== 'admin') {
+        // Employees get bounced safely to employee dashboard
+        return NextResponse.redirect(new URL('/employee/dashboard', req.url));
+      }
     }
 
     // Admins only routes:

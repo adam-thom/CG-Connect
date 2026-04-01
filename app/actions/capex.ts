@@ -159,20 +159,21 @@ export async function updateCapExStatus(id: string, status: string) {
   }
 }
 
-export async function setManagerBudget(userId: string, budget: number) {
+export async function setLocationBudget(managerId: string, location: string, budget: number) {
   const admin = await getSessionUser();
   if (!admin || admin.role !== 'admin') return { error: 'Unauthorized' };
 
   try {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { quarterlyCapExBudget: budget }
+    await prisma.managerLocationBudget.upsert({
+      where: { managerId_location: { managerId, location } },
+      update: { budget },
+      create: { managerId, location, budget },
     });
 
     revalidatePath('/admin/capex');
     return { success: true };
   } catch (error) {
-    return { error: 'Failed to deploy newly assigned budget allocation.' };
+    return { error: 'Failed to update location budget.' };
   }
 }
 
@@ -196,5 +197,23 @@ export async function addCapExComment(id: string, content: string) {
     return { success: true };
   } catch (error) {
     return { error: 'Failed to append dialogue context.' };
+  }
+}
+
+export async function resetLocationBudget(managerId: string, location: string) {
+  const admin = await getSessionUser();
+  if (!admin || admin.role !== 'admin') return { error: 'Unauthorized' };
+
+  try {
+    await prisma.managerLocationBudget.update({
+      where: { managerId_location: { managerId, location } },
+      data: { lastResetAt: new Date() },
+    });
+
+    revalidatePath('/admin/capex');
+    revalidatePath('/manager/capex');
+    return { success: true };
+  } catch (error) {
+    return { error: 'Failed to reset location budget.' };
   }
 }
