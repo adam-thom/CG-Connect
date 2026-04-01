@@ -5,7 +5,7 @@ import { submitCapExRequest, updateCapExRequest } from '@/app/actions/capex';
 import { UploadCloud, Loader2, DollarSign, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function CapExForm({ existingData }: { existingData?: any }) {
+export function CapExForm({ existingData, locations }: { existingData?: any, locations?: string[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
@@ -83,10 +83,9 @@ export function CapExForm({ existingData }: { existingData?: any }) {
                   className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium appearance-none"
               >
                   <option value="" disabled>Select location...</option>
-                  <option value="MB">MB</option>
-                  <option value="CSG">CSG</option>
-                  <option value="EVG">EVG</option>
-                  <option value="EDENS">EDENS</option>
+                  {((locations && locations.length > 0) ? locations : ['MB', 'CSG', 'EVG', 'EDENS']).map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
               </select>
             </div>
           </div>

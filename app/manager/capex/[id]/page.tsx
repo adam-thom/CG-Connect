@@ -16,7 +16,7 @@ export default async function ManagerCapExDetailView({ params }: { params: { id:
   const request = await prisma.capExRequest.findUnique({
     where: { id },
     include: {
-      submitter: true,
+      submitter: { include: { tags: true } },
       comments: {
         include: { author: true },
         orderBy: { createdAt: 'asc' }
@@ -32,6 +32,21 @@ export default async function ManagerCapExDetailView({ params }: { params: { id:
     redirect('/manager/capex'); // Secure isolation
   }
 
+  const validLocations = Array.from(
+    new Set(
+      (request.submitter.tags ?? [])
+        .map(t => {
+          const name = t.name.toUpperCase();
+          if (name.startsWith('MB')) return 'MB';
+          if (name.startsWith('CSG')) return 'CSG';
+          if (name.startsWith('EVG')) return 'EVG';
+          if (name.startsWith('EDENS')) return 'EDENS';
+          return null;
+        })
+        .filter(Boolean) as string[]
+    )
+  );
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="mb-4">
@@ -40,7 +55,7 @@ export default async function ManagerCapExDetailView({ params }: { params: { id:
         </Link>
       </div>
       
-      <CapExDetail data={request} currentUserRole="manager" />
+      <CapExDetail data={request} currentUserRole="manager" validLocations={validLocations} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
-import { ManagerBudgetCard, LOCATION_CONFIG } from '@/components/ManagerBudgetCard';
+import { GlobalLocationBar, LOCATION_CONFIG } from '@/components/GlobalBudgetCard';
 import Link from 'next/link';
 import { FileText, Clock, ChevronRight, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,57 +19,40 @@ export default async function AdminCapExDashboard() {
   const user = await getSessionUser();
   if (!user || user.role !== 'admin') redirect('/login');
 
-  // Fetch all managers with their tags and location budgets
-  const managers = await prisma.user.findMany({
-    where: { role: 'manager' },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      tags: { select: { name: true } },
-      locationBudgets: { select: { location: true, budget: true, lastResetAt: true } },
-    },
-    orderBy: { name: 'asc' },
+  // Fetch Global Location Budgets
+  const locationBudgetsDB = await prisma.locationBudget.findMany();
+  
+  // Ensure exactly 4 locations exist
+  const LOCATIONS = ['MB', 'CSG', 'EVG', 'EDENS'];
+  const globalBudgets = LOCATIONS.map(loc => {
+    const b = locationBudgetsDB.find(db => db.location === loc) || { location: loc, budget: 0, lastResetAt: new Date(0) };
+    return b;
   });
 
-  // Fetch all approved requests to build spent-per-manager-per-location map
+  // Fetch all approved requests globally
   const approvedRequests = await prisma.capExRequest.findMany({
     where: { status: 'Approved' },
-    select: { submitterId: true, location: true, amount: true, createdAt: true },
+    select: { location: true, amount: true, createdAt: true },
   });
 
-  // Map: managerId → location → spent
-  type SpentMap = Record<string, Record<string, number>>;
-  const spentMap: SpentMap = {};
+  // Map: location -> total spent system-wide since last reset
+  const locationSpent: Record<string, number> = {};
   for (const req of approvedRequests) {
-    if (!spentMap[req.submitterId]) spentMap[req.submitterId] = {};
     const loc = req.location.toUpperCase();
-    const manager = managers.find(m => m.id === req.submitterId);
-    const resetAt = manager?.locationBudgets.find(b => b.location === loc)?.lastResetAt;
-
-    if (!resetAt || req.createdAt >= resetAt) {
-      spentMap[req.submitterId][loc] = (spentMap[req.submitterId][loc] || 0) + req.amount;
+    const budgetData = globalBudgets.find(b => b.location === loc);
+    
+    // Only count if request was created AFTER the last time the budget was renewed
+    if (budgetData && req.createdAt >= budgetData.lastResetAt) {
+      locationSpent[loc] = (locationSpent[loc] || 0) + req.amount;
     }
   }
 
-  // Build per-manager data packets
-  const managerData = managers.map(mgr => {
-    const locations = Array.from(
-      new Set(
-        mgr.tags
-          .map(t => getLocationFromTag(t.name))
-          .filter((l): l is string => l !== null)
-      )
-    );
-
-    const locationBudgets = locations.map(loc => ({
-      location: loc,
-      budget: mgr.locationBudgets.find(b => b.location === loc)?.budget ?? 0,
-      spent: spentMap[mgr.id]?.[loc] ?? 0,
-    }));
-
-    return { manager: { id: mgr.id, name: mgr.name, email: mgr.email }, locations, locationBudgets };
-  });
+  // Final payload for UI
+  const locationBudgets = globalBudgets.map(b => ({
+    location: b.location,
+    budget: b.budget,
+    spent: locationSpent[b.location] || 0,
+  }));
 
   // Global request queue
   const allRequests = await prisma.capExRequest.findMany({
@@ -114,22 +97,11 @@ export default async function AdminCapExDashboard() {
           </div>
         </div>
 
-        {managerData.length === 0 ? (
-          <div className="bg-white p-8 rounded-3xl border border-dashed border-slate-300 text-center text-slate-500 font-medium shadow-sm">
-            No managers found. Assign manager roles in the Staff Directory first.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {managerData.map(({ manager, locations, locationBudgets }) => (
-              <ManagerBudgetCard
-                key={manager.id}
-                manager={manager}
-                locations={locations}
-                locationBudgets={locationBudgets}
-              />
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {locationBudgets.map((lb) => (
+            <GlobalLocationBar key={lb.location} lb={lb} />
+          ))}
+        </div>
       </div>
 
       {/* Global Review Queue */}

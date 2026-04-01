@@ -11,7 +11,7 @@ export default function ManagerProfile() {
   const { user } = useAuth();
   if (!user) return null;
 
-  const recentReviews = MOCK_SUBMISSIONS.filter(s => s.status === 'PENDING').slice(0, 4);
+  const recentReviews = MOCK_SUBMISSIONS.filter(s => s.status === 'pending').slice(0, 4);
 
   const certifications = [
     { name: "NFDA Board Certification", expires: "2028-05-15", status: "Active" },

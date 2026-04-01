@@ -2,7 +2,7 @@ import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { CapExForm } from '@/components/CapExForm';
-import { LOCATION_CONFIG } from '@/components/ManagerBudgetCard';
+import { LOCATION_CONFIG } from '@/components/GlobalBudgetCard';
 import Link from 'next/link';
 import { FileText, Clock, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,15 +19,11 @@ export default async function ManagerCapExDashboard() {
   const session = await getSessionUser();
   if (!session || session.role !== 'manager') redirect('/login');
 
-  // Fetch manager with tags and location budgets
+  // Fetch manager with tags
   const mgr = await prisma.user.findUnique({
     where: { id: session.id },
     select: {
-      id: true,
-      name: true,
-      email: true,
       tags: { select: { name: true } },
-      locationBudgets: { select: { location: true, budget: true, lastResetAt: true } },
     },
   });
 
@@ -40,27 +36,35 @@ export default async function ManagerCapExDashboard() {
     )
   );
 
-  // Approved capex requests grouped by location for spent calc
+  // Fetch Global Location Budgets for mgr locations
+  const globalBudgets = await prisma.locationBudget.findMany({
+    where: { location: { in: locations } }
+  });
+
+  // Approved capex requests globally for assigned locations to calculate global spent
   const approvedRequests = await prisma.capExRequest.findMany({
-    where: { submitterId: session.id, status: 'Approved' },
+    where: { location: { in: locations }, status: 'Approved' },
     select: { location: true, amount: true, createdAt: true },
   });
 
   const spentByLocation: Record<string, number> = {};
   for (const req of approvedRequests) {
     const loc = req.location.toUpperCase();
-    const resetAt = mgr?.locationBudgets.find(b => b.location === loc)?.lastResetAt;
+    const resetAt = globalBudgets.find(b => b.location === loc)?.lastResetAt;
     
     if (!resetAt || req.createdAt >= resetAt) {
       spentByLocation[loc] = (spentByLocation[loc] || 0) + req.amount;
     }
   }
 
-  const locationBudgets = locations.map(loc => ({
-    location: loc,
-    budget: mgr?.locationBudgets.find(b => b.location === loc)?.budget ?? 0,
-    spent: spentByLocation[loc] ?? 0,
-  }));
+  const locationBudgets = locations.map(loc => {
+    const dbBudget = globalBudgets.find(b => b.location === loc);
+    return {
+      location: loc,
+      budget: dbBudget?.budget ?? 0,
+      spent: spentByLocation[loc] ?? 0,
+    };
+  });
 
   const allRequests = await prisma.capExRequest.findMany({
     where: { submitterId: session.id },
@@ -128,7 +132,7 @@ export default async function ManagerCapExDashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-          <CapExForm />
+          <CapExForm locations={locations} />
         </div>
 
         <div className="lg:col-span-2 space-y-4">

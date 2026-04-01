@@ -35,9 +35,7 @@ model User {
   comments     Comment[]  @relation("CommentAuthor")
   uploadedDocs Document[] @relation("DocumentUploader")
 
-  quarterlyCapExBudget Float? @default(0)
   capExRequests        CapExRequest[] @relation("CapExSubmitter")
-  locationBudgets      ManagerLocationBudget[] @relation("ManagerLocationBudgets")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -227,17 +225,12 @@ model CapExRequest {
   updatedAt DateTime @updatedAt
 }
 
-model ManagerLocationBudget {
-  id        String @id @default(cuid())
-  managerId String
-  manager   User   @relation("ManagerLocationBudgets", fields: [managerId], references: [id])
-
-  location String // "MB", "CSG", "EVG", "EDENS"
-  budget   Float  @default(0)
+model LocationBudget {
+  id          String   @id @default(cuid())
+  location    String   @unique // "MB", "CSG", "EVG", "EDENS"
+  budget      Float    @default(0)
   lastResetAt DateTime @default(now())
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([managerId, location])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

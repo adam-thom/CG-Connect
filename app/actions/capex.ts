@@ -46,6 +46,30 @@ export async function submitCapExRequest(formData: FormData) {
     return { error: 'Two valid quote documents are required' };
   }
 
+  // Budget Validation
+  const budgetData = await prisma.locationBudget.findUnique({
+    where: { location }
+  });
+
+  if (!budgetData || budgetData.budget <= 0) {
+    return { error: `No budget has been assigned for ${location}.` };
+  }
+
+  const existingRequests = await prisma.capExRequest.findMany({
+    where: { 
+      location, 
+      status: { in: ['Approved', 'Pending', 'Revision Requested'] },
+      createdAt: { gte: budgetData.lastResetAt }
+    },
+    select: { amount: true }
+  });
+
+  const committed = existingRequests.reduce((sum, req) => sum + req.amount, 0);
+
+  if (committed + amount > budgetData.budget) {
+    return { error: `This request exceeds your remaining ${location} budget. Please wait for an Admin to renew your budget.` };
+  }
+
   try {
     const path1 = await saveFile(file1);
     const path2 = await saveFile(file2);
@@ -88,6 +112,31 @@ export async function updateCapExRequest(id: string, formData: FormData) {
   const location = formData.get('location') as string;
   const amountStr = formData.get('amount') as string;
   const amount = parseFloat(amountStr);
+
+  // Budget Validation (Exclude the current request from committed total)
+  const budgetData = await prisma.locationBudget.findUnique({
+    where: { location }
+  });
+  
+  if (!budgetData || budgetData.budget <= 0) {
+    return { error: `No budget has been assigned for ${location}.` };
+  }
+
+  const existingRequests = await prisma.capExRequest.findMany({
+    where: { 
+      location, 
+      status: { in: ['Approved', 'Pending', 'Revision Requested'] },
+      id: { not: id },
+      createdAt: { gte: budgetData.lastResetAt }
+    },
+    select: { amount: true }
+  });
+
+  const committed = existingRequests.reduce((sum, req) => sum + req.amount, 0);
+
+  if (committed + amount > budgetData.budget) {
+    return { error: `This revision exceeds your remaining ${location} budget. Please wait for an Admin to renew your budget.` };
+  }
 
   const file1 = formData.get('quote1') as File | null;
   const file2 = formData.get('quote2') as File | null;
@@ -159,15 +208,15 @@ export async function updateCapExStatus(id: string, status: string) {
   }
 }
 
-export async function setLocationBudget(managerId: string, location: string, budget: number) {
+export async function setLocationBudget(location: string, budget: number) {
   const admin = await getSessionUser();
   if (!admin || admin.role !== 'admin') return { error: 'Unauthorized' };
 
   try {
-    await prisma.managerLocationBudget.upsert({
-      where: { managerId_location: { managerId, location } },
+    await prisma.locationBudget.upsert({
+      where: { location },
       update: { budget },
-      create: { managerId, location, budget },
+      create: { location, budget },
     });
 
     revalidatePath('/admin/capex');
@@ -200,13 +249,13 @@ export async function addCapExComment(id: string, content: string) {
   }
 }
 
-export async function resetLocationBudget(managerId: string, location: string) {
+export async function resetLocationBudget(location: string) {
   const admin = await getSessionUser();
   if (!admin || admin.role !== 'admin') return { error: 'Unauthorized' };
 
   try {
-    await prisma.managerLocationBudget.update({
-      where: { managerId_location: { managerId, location } },
+    await prisma.locationBudget.update({
+      where: { location },
       data: { lastResetAt: new Date() },
     });
 

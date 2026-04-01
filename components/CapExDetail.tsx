@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { CapExForm } from './CapExForm';
 
-export function CapExDetail({ data, currentUserRole }: { data: any; currentUserRole: string; }) {
+export function CapExDetail({ data, currentUserRole, validLocations }: { data: any; currentUserRole: string; validLocations?: string[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState("");
@@ -132,7 +132,7 @@ export function CapExDetail({ data, currentUserRole }: { data: any; currentUserR
       
       {isEditable && (
         <div className="mb-8">
-            <CapExForm existingData={data} />
+            <CapExForm existingData={data} locations={validLocations} />
         </div>
       )}
 
