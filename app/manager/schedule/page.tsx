@@ -1,21 +1,28 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { MOCK_SCHEDULE_ENTRIES, MOCK_USERS, MOCK_SUBMISSIONS, ScheduleRole } from "@/lib/mock-data";
+import { MOCK_SCHEDULE_ENTRIES, MOCK_USERS, ScheduleRole } from "@/lib/mock-data";
 import { ChevronLeft, ChevronRight, Phone, Truck, Flame, Plus, Mail } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/Modal";
+import { fetchAllApprovedTimeOffs } from "@/app/actions/submissions";
 
 export default function ManagerSchedule() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [approvedTimeOffs, setApprovedTimeOffs] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAllApprovedTimeOffs().then(setApprovedTimeOffs);
+  }, []);
 
   if (!user) return null;
 
   const daysInMonth = 31;
-  const startDay = 4; // Thu
+  const startDay = 4; // Thu (Oct 1 2026 is a Thursday)
+  const currentMonthDateString = "2026-10-";
 
   const REQUIRED_ROLES: ScheduleRole[] = [
     "Lead Director - MB",
@@ -45,7 +52,24 @@ export default function ManagerSchedule() {
     alert("Schedule has been successfully emailed to all assigned staff!");
   };
 
-  const currentMonthDateString = "2026-10-";
+  // Build Weeks Array for Calendar Grid
+  const weeks: any[][] = [];
+  let currentWeek: any[] = [];
+  for(let i = 0; i < startDay; i++) currentWeek.push(null);
+  
+  for(let i = 1; i <= daysInMonth; i++) {
+    const dayStr = String(i).padStart(2, '0');
+    currentWeek.push({ dayNum: i, dateStr: `${currentMonthDateString}${dayStr}` });
+    
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+  if (currentWeek.length > 0) {
+    while(currentWeek.length < 7) currentWeek.push(null);
+    weeks.push(currentWeek);
+  }
 
   return (
     <div className="animate-in fade-in duration-500 pb-12 overflow-x-hidden">
@@ -76,6 +100,7 @@ export default function ManagerSchedule() {
 
       <div className="flex flex-col xl:flex-row gap-8 items-start relative z-0">
         <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden w-full">
+          {/* Header */}
           <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
               <div key={d} className="py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -84,51 +109,103 @@ export default function ManagerSchedule() {
             ))}
           </div>
           
-          <div className="grid grid-cols-7 auto-rows-[140px]">
-            {/* Empty padding blocks */}
-            {Array.from({ length: startDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="border-r border-b border-slate-100 bg-slate-50/30 p-2 opacity-50"></div>
-            ))}
-            
-            {/* Real day blocks */}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const dayStr = String(i + 1).padStart(2, '0');
-              const dateKey = `${currentMonthDateString}${dayStr}`;
-              
-              const dayEntries = MOCK_SCHEDULE_ENTRIES.filter(e => e.date === dateKey);
-              const isToday = dateKey === "2026-10-02";
-              
-              return (
-                <div 
-                  key={i} 
-                  onClick={() => handleDayClick(dateKey)}
-                  className="border-r border-b border-slate-100 p-2 relative group cursor-pointer hover:bg-brand-50/30 transition-colors flex flex-col"
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <span className={cn(
-                      "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full pointer-events-none",
-                      isToday ? "bg-brand-900 text-white shadow-sm" : "text-slate-700"
-                    )}>
-                      {i + 1}
-                    </span>
-                    <button className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-brand-600 hover:bg-brand-100 transition-colors pointer-events-none">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-1 overflow-y-auto flex-1 scrollbar-hide">
-                    {dayEntries.map(entry => {
-                      const userObj = MOCK_USERS.find(u => u.id === entry.userId);
+          {/* Weeks Grid */}
+          <div className="flex flex-col">
+            {weeks.map((week, wIdx) => {
+               // Determine which Approved Time Offs span this specific week sequence
+               const activeDays = week.filter(d => d !== null);
+               const weekStartStr = activeDays[0]?.dateStr;
+               const weekEndStr = activeDays[activeDays.length - 1]?.dateStr;
+
+               return (
+                 <div key={wIdx} className="grid grid-cols-7 relative auto-rows-[140px] border-b border-slate-200 last:border-b-0 group">
+                    {/* Background cells & standard schedule entries */}
+                    {week.map((day, dIdx) => {
+                      if (!day) return <div key={dIdx} className="border-r border-slate-100 bg-slate-50/30 p-2 opacity-50"></div>;
+                      
+                      const isToday = day.dateStr === "2026-10-02";
+                      const dayEntries = MOCK_SCHEDULE_ENTRIES.filter(e => e.date === day.dateStr);
+
                       return (
-                        <div key={entry.id} className="text-[11px] px-1.5 py-1 rounded border border-slate-200 bg-white text-slate-700 flex justify-between items-center shadow-sm">
-                          <span className="truncate pr-1 font-medium">{userObj?.name.split(' ')[0]}</span>
-                          <span className="shrink-0">{getRoleIcon(entry.roleType)}</span>
+                        <div 
+                          key={dIdx} 
+                          onClick={() => handleDayClick(day.dateStr)}
+                          className="border-r last:border-r-0 border-slate-100 p-2 relative group-hover:bg-brand-50/10 cursor-pointer transition-colors flex flex-col"
+                        >
+                          <div className="flex justify-between items-start mb-1 z-20 relative">
+                            <span className={cn(
+                              "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full pointer-events-none",
+                              isToday ? "bg-brand-900 text-white shadow-sm" : "text-slate-700"
+                            )}>
+                              {day.dayNum}
+                            </span>
+                            <button className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-brand-600 hover:bg-brand-100 transition-colors pointer-events-none">
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          <div className="space-y-1 overflow-y-auto flex-1 scrollbar-hide z-20 relative mt-4">
+                            {dayEntries.map(entry => {
+                              const userObj = MOCK_USERS.find(u => u.id === entry.userId);
+                              return (
+                                <div key={entry.id} className="text-[11px] px-1.5 py-1 rounded border border-slate-200 bg-white/90 backdrop-blur-sm text-slate-700 flex justify-between items-center shadow-sm">
+                                  <span className="truncate pr-1 font-medium">{userObj?.name.split(' ')[0]}</span>
+                                  <span className="shrink-0">{getRoleIcon(entry.roleType)}</span>
+                                </div>
+                              )
+                            })}
+                          </div>
                         </div>
-                      )
+                      );
                     })}
-                  </div>
-                </div>
-              );
+
+                    {/* Foreground Bar Overlay for Time Off */}
+                    <div className="absolute inset-x-0 top-10 bottom-0 grid grid-cols-7 pointer-events-none z-10 px-0.5 gap-y-0.5 content-start">
+                       {approvedTimeOffs.map((toff, tIdx) => {
+                          const offStart = toff.startDate;
+                          const offEnd = toff.endDate;
+
+                          // Check overlap
+                          if (offEnd < weekStartStr || offStart > weekEndStr) return null;
+
+                          // Calculate span within this block
+                          let startCol = week.findIndex(d => d && d.dateStr >= offStart);
+                          if (startCol === -1) startCol = week.findIndex(d => d !== null);
+
+                          let endCol = week.findLastIndex(d => d && d.dateStr <= offEnd);
+                          if (endCol === -1) endCol = week.findLastIndex(d => d !== null);
+
+                          const colSpan = endCol - startCol + 1;
+
+                          // Assign deterministic colors based on user ID to keep bars visually consistent
+                          const colors = [
+                             "bg-amber-700/60 text-amber-900",
+                             "bg-rose-700/60 text-rose-900",
+                             "bg-indigo-700/60 text-indigo-900",
+                             "bg-teal-700/60 text-teal-900",
+                             "bg-brand-700/60 text-brand-900"
+                          ];
+                          const colorClass = colors[(toff.userId.charCodeAt(0) || 0) % colors.length];
+
+                          return (
+                            <div 
+                              key={`${toff.id}-${wIdx}`} 
+                              className={cn(
+                                "flex items-center justify-center py-0.5 px-2 text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase rounded shadow-sm text-white",
+                                colorClass
+                              )}
+                              style={{ 
+                                gridColumnStart: startCol + 1, 
+                                gridColumnEnd: `span ${colSpan}` 
+                              }}
+                            >
+                              <span className="truncate drop-shadow-md">{toff.userName.split(' ')[0]} OFF</span>
+                            </div>
+                          );
+                       })}
+                    </div>
+                 </div>
+               )
             })}
           </div>
         </div>
@@ -164,22 +241,22 @@ export default function ManagerSchedule() {
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={`Assign Staff: ${selectedDate}`}>
         <div className="space-y-6 flex flex-col h-[75vh]">
-          <p className="text-sm text-slate-600 shrink-0">Select personnel to fill all required roles for this date. Unavailable employees are omitted.</p>
+          <p className="text-sm text-slate-600 shrink-0">Select personnel to fill all required roles for this date. Employees on scheduled Time Off are automatically removed.</p>
           
           <div className="space-y-3 overflow-y-auto pr-2 pb-2 flex-1 scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
             {REQUIRED_ROLES.map(role => {
               // Map mock assignments to slots
               const existingEntry = selectedDate ? MOCK_SCHEDULE_ENTRIES.find(e => e.date === selectedDate && e.roleType === role) : undefined;
 
-              // Filter users who are OFF on this date
+              // Filter users who are OFF on this date (Real DB integration)
               const availableUsers = MOCK_USERS.filter(u => {
-                const isOff = MOCK_SUBMISSIONS.some(sub => 
-                  sub.type === "time-off" && 
-                  sub.status === "approved" && 
-                  sub.submitterId === u.id && 
-                  sub.data?.dates?.includes(selectedDate)
+                if (!selectedDate) return true;
+                const isOff = approvedTimeOffs.some(toff => 
+                   toff.userId === u.id && 
+                   selectedDate >= toff.startDate && 
+                   selectedDate <= toff.endDate
                 );
-                return !isOff;
+                return !isOff; // Retain users who are NOT off
               });
 
               return (

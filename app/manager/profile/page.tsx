@@ -13,12 +13,6 @@ export default function ManagerProfile() {
 
   const recentReviews = MOCK_SUBMISSIONS.filter(s => s.status === 'pending').slice(0, 4);
 
-  const certifications = [
-    { name: "NFDA Board Certification", expires: "2028-05-15", status: "Active" },
-    { name: "Emergency Response Handling", expires: "2026-11-01", status: "Active" },
-    { name: "OSHA Bloodborne Pathogens", expires: "2025-10-12", status: "Expired" },
-    { name: "Advanced Crematory Operations", expires: "2027-02-28", status: "Active" },
-  ];
 
   return (
     <div className="animate-in fade-in duration-500 pb-12 space-y-8 max-w-5xl mx-auto">
@@ -44,41 +38,6 @@ export default function ManagerProfile() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* Certifications Card */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-          <div className="p-6 border-b border-slate-100 flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-accent-500" />
-            <h2 className="text-lg font-bold text-accent-900">Professional Licenses</h2>
-          </div>
-          <div className="p-0 flex-1">
-            <ul className="divide-y divide-slate-100">
-              {certifications.map((cert, idx) => {
-                const isActive = cert.status === "Active";
-                return (
-                  <li key={idx} className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div>
-                      <p className="font-semibold text-accent-900 mb-1">{cert.name}</p>
-                      <p className="text-sm text-slate-500 flex items-center gap-2">
-                        Valid until: {new Date(cert.expires).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="shrink-0 flex items-center gap-2">
-                      {isActive ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                          <XCircle className="w-3.5 h-3.5" /> Expired
-                        </span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
 
         {/* Pending Reviews Carousel Widget */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">

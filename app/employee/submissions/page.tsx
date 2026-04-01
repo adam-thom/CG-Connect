@@ -7,12 +7,14 @@ import Link from "next/link";
 import { Search, Filter, ArrowRight, FilePlus, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { NewSubmissionModal } from "@/components/NewSubmissionModal";
 
 export default function EmployeeSubmissions() {
   const { user } = useAuth();
   const [filter, setFilter] = useState("all");
   const [mySubmissions, setMySubmissions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchMySubmissions().then(data => {
@@ -36,10 +38,10 @@ export default function EmployeeSubmissions() {
           <p className="text-slate-500 mt-2 text-lg">Track the status of your records and requests.</p>
         </div>
         <div>
-          <Link href="/employee/dashboard" className="bg-accent-600 hover:bg-accent-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+          <button onClick={() => setIsModalOpen(true)} className="bg-accent-600 hover:bg-accent-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
             <FilePlus className="w-5 h-5" />
             New Submission
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -125,6 +127,7 @@ export default function EmployeeSubmissions() {
           </table>
         </div>
       </div>
+      <NewSubmissionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

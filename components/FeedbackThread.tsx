@@ -1,29 +1,47 @@
 "use client";
 import { useState } from "react";
-import { Comment } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth-context";
 import { Send, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FeedbackThreadProps {
-  comments: Comment[];
+  comments: any[];
   status: string;
+  type: string;
   onStatusChange: (newStatus: string) => void;
   onAddComment: (content: string) => void;
 }
 
-export function FeedbackThread({ comments, status, onStatusChange, onAddComment }: FeedbackThreadProps) {
+export function FeedbackThread({ comments, status, type, onStatusChange, onAddComment }: FeedbackThreadProps) {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
-  const isManager = user?.role === "manager";
   const [selectedStatus, setSelectedStatus] = useState(status);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isManager = user?.role === "manager" || user?.role === "admin";
+  const isLocked = status === "approved" || status === "finalized";
+  
+  const isOHSManager = user?.role === "admin" || user?.tags?.some((t: any) => t.name === "OHS Manager");
+  const canOverrideStatus = isManager && (type !== "incident" || isOHSManager);
 
   if (!user) return null;
 
-  const handleSubmit = () => {
-    if (!newComment.trim()) return;
-    onAddComment(newComment);
-    setNewComment("");
+  const handleSubmit = async () => {
+    if (!newComment.trim() && selectedStatus === status) return;
+    
+    setIsSubmitting(true);
+    try {
+      if (newComment.trim()) {
+        await onAddComment(newComment);
+        setNewComment("");
+      }
+      
+      if (selectedStatus !== status) {
+        await onStatusChange(selectedStatus);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -40,7 +58,7 @@ export function FeedbackThread({ comments, status, onStatusChange, onAddComment 
         ) : (
           <div className="space-y-4">
             {comments.map((comment) => {
-              const _isManager = comment.authorId.includes("MGR");
+              const _isManager = comment.authorRole === "manager" || comment.authorRole === "admin";
               return (
                 <div key={comment.id} className="flex gap-4">
                   <div className={cn(
@@ -52,14 +70,14 @@ export function FeedbackThread({ comments, status, onStatusChange, onAddComment 
                   <div className="bg-white rounded-lg p-4 flex-1 shadow-sm border border-slate-100">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-semibold text-slate-900">
-                        {comment.authorId}
+                        {comment.authorName}
                       </span>
                       <span className="text-xs text-slate-400 flex items-center gap-1.5 font-medium">
                         <Clock className="w-3.5 h-3.5" />
                         {new Date(comment.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </span>
                     </div>
-                    <p className="text-sm text-slate-700 leading-relaxed">{comment.content}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">{comment.content}</p>
                   </div>
                 </div>
               );
@@ -68,56 +86,56 @@ export function FeedbackThread({ comments, status, onStatusChange, onAddComment 
         )}
 
         {/* Input Area */}
-        <div className="pt-6 border-t border-slate-200">
-          <textarea
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder={isManager ? "Add internal note or request adjustments..." : "Add a reply to the manager..."}
-            className="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[120px] mb-4 bg-white shadow-sm resize-y"
-          />
-          
-          <div className="flex items-center justify-between">
-            {isManager ? (
-              <div className="flex items-center gap-3 w-full justify-between sm:justify-start">
-                <select 
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="border border-slate-200 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white font-medium text-slate-700 shadow-sm"
-                >
-                  <option value="pending">Keep Pending</option>
-                  <option value="revision-required">Require Revision</option>
-                  <option value="approved">Approve</option>
-                  <option value="finalized">Finalize</option>
-                </select>
-                <button 
-                  onClick={() => {
-                    if (newComment) handleSubmit();
-                    if (selectedStatus !== status) onStatusChange(selectedStatus);
-                  }}
-                  className={cn(
-                    "text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm",
-                    selectedStatus === "revision-required" ? "bg-orange-600 hover:bg-orange-700" : "bg-brand-900 hover:bg-brand-800"
-                  )}
-                >
-                  <Send className="w-4 h-4" />
-                  {selectedStatus === "revision-required" ? "Send Back for Adjustments" : "Sign Off & Update"}
-                </button>
-              </div>
-            ) : (
-              <div className="flex justify-end w-full">
-                {(status === "revision-required" || status === "draft" || status === "pending") && (
+        {!isLocked && (
+          <div className="pt-6 border-t border-slate-200">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder={isManager ? "Add internal note or request adjustments..." : "Add a reply to the manager..."}
+              className="w-full border border-slate-200 rounded-xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 min-h-[120px] mb-4 bg-white shadow-sm resize-y"
+              disabled={isSubmitting}
+            />
+            
+            <div className="flex items-center justify-between">
+              {canOverrideStatus ? (
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-between sm:justify-start">
+                  <select 
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    className="border border-slate-200 rounded-lg text-sm p-2.5 focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white font-medium text-slate-700 shadow-sm w-full sm:w-auto"
+                    disabled={isSubmitting}
+                  >
+                    <option value="pending">Keep Pending</option>
+                    <option value="revision-required">Require Revision</option>
+                    <option value="approved">Approve</option>
+                  </select>
                   <button 
                     onClick={handleSubmit}
-                    className="bg-accent-600 hover:bg-accent-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm"
+                    disabled={isSubmitting || (!newComment.trim() && selectedStatus === status)}
+                    className={cn(
+                      "text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors shadow-sm w-full sm:w-auto disabled:opacity-50",
+                      selectedStatus === "revision-required" ? "bg-orange-600 hover:bg-orange-700" : "bg-brand-900 hover:bg-brand-800"
+                    )}
+                  >
+                    <Send className="w-4 h-4" />
+                    {selectedStatus === "revision-required" ? "Send Back for Adjustments" : "Sign Off & Update"}
+                  </button>
+                </div>
+              ) : (
+                <div className="flex justify-end w-full">
+                  <button 
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || !newComment.trim()}
+                    className="bg-accent-600 hover:bg-accent-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm disabled:opacity-50"
                   >
                     <Send className="w-4 h-4" />
                     Submit Reply
                   </button>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

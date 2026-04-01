@@ -48,6 +48,7 @@ export function SubmissionDetail({
       <FeedbackThread 
         comments={submission.feedbackThread}
         status={submission.status}
+        type={submission.type}
         onStatusChange={(s) => onStatusChange?.(s)}
         onAddComment={(c) => onAddComment?.(c)}
       />

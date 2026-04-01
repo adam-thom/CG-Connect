@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useState, use, useEffect, useActionState } from "react";
 import { submitFormAction } from "@/app/actions/submissions";
+import { fetchFuneralDirectors } from "@/app/actions/users";
 import { 
   Clock, 
   Activity, 
@@ -24,6 +25,11 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
 
   const [transferType, setTransferType] = useState<string>("Standard");
   const [hasTransferTime, setHasTransferTime] = useState<boolean>(false);
+  const [funeralDirectors, setFuneralDirectors] = useState<{id: string, name: string | null}[]>([]);
+
+  useEffect(() => {
+    fetchFuneralDirectors().then(setFuneralDirectors);
+  }, []);
 
   useEffect(() => {
     if (state.success) {
@@ -96,112 +102,284 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
     </div>
   );
 
-  const renderTransferForm = () => (
-    <div className="space-y-6 relative">
-      <div className="grid grid-cols-2 gap-6 relative z-10">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
-          <input type="date" name="date" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Time</label>
-          <input type="time" name="time" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
-        </div>
-      </div>
+  const renderTransferForm = () => {
+    const isStandard = transferType === "Standard";
+    const isPolice = transferType === "Non-M.E. Police";
+    const isME = transferType === "M.E.";
+    const isAllTypes = isStandard || isPolice || isME;
 
-      <div className="relative z-10">
-        <label className="block text-sm font-medium text-slate-700 mb-2">Transfer Team</label>
-        <input type="text" name="team" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Name(s) of personnel involved" />
-      </div>
-
-      <div className="relative z-10">
-        <label className="block text-sm font-medium text-slate-700 mb-2">Type of Transfer</label>
-        <select 
-          name="transferType" 
-          value={transferType}
-          onChange={(e) => setTransferType(e.target.value)}
-          className="w-full border-2 border-brand-200 rounded-lg p-3 bg-brand-50 font-bold text-brand-900 cursor-pointer focus:ring-2 focus:ring-brand-500" 
-        >
-          <option value="Standard">Standard Transfer</option>
-          <option value="M.E.">M.E. (Medical Examiner) Transfer</option>
-          <option value="Non-M.E. Police">Non-M.E. Police Transfer</option>
-        </select>
-        <p className="text-xs text-brand-700 mt-2">All Transfer Records route directly to TRANSFER MANAGER.</p>
-      </div>
-
-      <div className="grid grid-cols-2 gap-6 relative z-10">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Name of Deceased</label>
-          <input type="text" name="deceasedName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Full legal name" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Place of Death</label>
-          <input type="text" name="placeOfDeath" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Specific hospital, address, etc." />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Next of Kin Name</label>
-          <input type="text" name="nokName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">NOK Relationship</label>
-          <input type="text" name="nokRelation" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">NOK Contact #</label>
-          <input type="tel" name="nokContact" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
-        </div>
-      </div>
-
-      {(transferType === "M.E." || transferType === "Non-M.E. Police") && (
-        <div className="p-6 border-2 border-slate-200 rounded-xl bg-slate-50 relative z-10 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-          <h3 className="font-bold text-slate-900 flex items-center gap-2">Constabulary Details</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Cons't Name</label>
-              <input type="text" name="constName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Officer Name" />
+    return (
+    <div className="space-y-8 relative">
+      {/* Top Header Block: ALL TYPES */}
+      {isAllTypes && (
+        <div className="p-6 md:p-8 border border-slate-200 rounded-2xl bg-white relative z-10 space-y-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-100 pb-6 mb-2">
+            <h3 className="font-bold text-xl text-slate-900 flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full bg-brand-100 text-brand-600 flex items-center justify-center text-sm font-black">1</span>
+              Call Details
+            </h3>
+            <div className="w-full md:w-auto">
+              <select 
+                name="transferType" 
+                value={transferType}
+                onChange={(e) => setTransferType(e.target.value)}
+                className="w-full md:w-64 border-2 border-brand-300 rounded-lg p-2.5 bg-brand-50 font-bold text-brand-900 cursor-pointer focus:ring-2 focus:ring-brand-500 outline-none transition-all shadow-sm" 
+              >
+                <option value="Standard">Standard Transfer</option>
+                <option value="M.E.">M.E. Transfer</option>
+                <option value="Non-M.E. Police">Non-M.E. Police Transfer</option>
+              </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Cons't Number</label>
-              <input type="text" name="constNumber" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Badge/ID Number" />
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-8">
+            <div className="col-span-1 lg:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Date *</label>
+              <input type="date" name="date" required className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div className="col-span-1 lg:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Time of Call *</label>
+              <input type="time" name="time" required className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            
+            <div className="col-span-1 lg:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Person Calling</label>
+              <input type="text" name="callerName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div className="col-span-1 lg:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Phone #</label>
+              <input type="tel" name="callerPhone" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            
+            <div className="col-span-1 lg:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Funeral Director Assigning Transfer *</label>
+              <select name="funeralDirectorAssigning" required className="w-full border border-slate-200 rounded-lg p-3 bg-white">
+                <option value="">-- Select --</option>
+                {funeralDirectors.map(fd => (
+                   <option key={fd.id} value={fd.name || ''}>{fd.name}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="col-span-1 lg:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Transfer Team *</label>
+              <input type="text" name="team" required className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Name(s) of personnel involved" />
+            </div>
+            
+            <div className="col-span-1 lg:col-span-4">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Where to take the body *</label>
+              <textarea name="destination" required className="w-full border border-slate-200 rounded-lg p-3 bg-white"></textarea>
             </div>
           </div>
         </div>
       )}
 
-      {transferType === "M.E." && (
-        <div className="p-6 border-2 border-brand-200 rounded-xl bg-brand-50/50 relative z-10 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-          <h3 className="font-bold text-brand-900 flex items-center gap-2">M.E. Protocol Requirements</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      {/* Deceased Info Block: ALL TYPES */}
+      {isAllTypes && (
+        <div className="p-6 md:p-8 border border-slate-200 rounded-2xl bg-white relative z-10 space-y-6 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+          <h3 className="font-bold text-xl text-slate-900 flex items-center gap-3 border-b border-slate-100 pb-4">
+             <span className="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-sm font-black">2</span>
+             Deceased Details
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-6 gap-x-8">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Name of Medical Examiner</label>
-              <input type="text" name="meName" className="w-full border border-brand-200 rounded-lg p-3 bg-white focus:ring-brand-500" placeholder="Authorizing M.E." />
+              <label className="block text-sm font-medium text-slate-700 mb-2">Name of Deceased *</label>
+              <input type="text" name="deceasedName" required className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div className="mt-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Place of Death *</label>
+              <textarea name="placeOfDeath" required className="w-full border border-slate-200 rounded-lg p-3 bg-white"></textarea>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-y-6 gap-x-8 mt-2">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Age</label>
+              <input type="text" name="deceasedAge" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-900 mb-3">Two Transfer Staff Approved?</label>
-              <div className="flex gap-6 mt-1">
-                <label className="flex items-center gap-3 cursor-pointer">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Sex</label>
+              <input type="text" name="deceasedSex" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">D.O.B</label>
+              <input type="date" name="deceasedDob" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">D.O.D *</label>
+              <input type="date" name="deceasedDod" required className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grid for Valuables & NOK side-by-side if both present, or full width if not */}
+      <div className={`grid gap-6 animate-in fade-in slide-in-from-bottom-2 ${((isStandard || isME) && (isPolice || isME)) ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}>
+        {/* Valuables Block: Standard and M.E. */}
+        {(isStandard || isME) && (
+          <div className="p-6 md:p-8 border border-green-200 rounded-2xl bg-[#f0fdf4] relative z-10 space-y-4 shadow-sm flex flex-col h-full">
+            <h3 className="font-bold text-lg text-green-900 flex items-center gap-2">
+              Valuables
+            </h3>
+            <div className="flex-1 min-h-[150px] relative">
+              <label className="block text-sm font-medium text-green-800 mb-2">Valuables/Item(s) Description *</label>
+              <textarea name="valuables" required className="w-full border border-green-200 rounded-lg p-4 bg-white min-h-[100px] focus:ring-green-500"></textarea>
+            </div>
+          </div>
+        )}
+
+        {/* N.O.K Block: Police and M.E. */}
+        <div className="space-y-6 flex flex-col">
+          {(isPolice || isME) && (
+            <div className="p-6 md:p-8 border border-blue-200 rounded-2xl bg-[#eff6ff] relative z-10 space-y-6 shadow-sm flex-1">
+              <h3 className="font-bold text-lg text-blue-900 flex items-center gap-2">Next of Kin</h3>
+              <div className="grid grid-cols-1 gap-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-blue-800 mb-2">N.O.K Name</label>
+                  <input type="text" name="nokName" className="w-full border border-blue-200 rounded-lg p-3 bg-white focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-blue-800 mb-2">N.O.K Phone #</label>
+                  <input type="tel" name="nokContact" className="w-full border border-blue-200 rounded-lg p-3 bg-white focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-blue-800 mb-2">Relationship to deceased</label>
+                  <input type="text" name="nokRelation" className="w-full border border-blue-200 rounded-lg p-3 bg-white focus:ring-blue-500" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Special Instructions: M.E. Only */}
+          {isME && (
+            <div className="p-6 border border-slate-300 rounded-2xl bg-white relative z-10 shadow-sm">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Special Instructions & Conditions of Remains</label>
+              <textarea name="specialInstructions" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[100px]"></textarea>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Constabulary details bottom & Medical Examiner details */}
+      {isME ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2">
+          <div className="p-6 md:p-8 border border-slate-300 rounded-2xl bg-slate-50 shadow-sm space-y-6">
+            <h3 className="font-bold text-lg text-slate-800">Medical Examiner info</h3>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">MEDICAL EXAMINER NAME</label>
+              <input type="text" name="medicalExaminerName" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">DATE TO BE BROUGHT TO M.E.</label>
+              <input type="date" name="dateToME" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+          </div>
+          
+          <div className="p-6 md:p-8 border border-blue-200 rounded-2xl bg-[#eff6ff] shadow-sm space-y-6 flex flex-col justify-center">
+            <h3 className="font-bold text-lg text-blue-900">Constabulary (Scene)</h3>
+            <div>
+              <label className="block text-sm font-medium text-blue-800 mb-2">CONS'T NAME</label>
+              <input type="text" name="constName" className="w-full border border-blue-200 rounded-lg p-3 bg-white focus:ring-blue-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-blue-800 mb-2">CONS'T NUMBER</label>
+              <input type="text" name="constNumber" className="w-full border border-blue-200 rounded-lg p-3 bg-white focus:ring-blue-500" />
+            </div>
+          </div>
+        </div>
+      ) : isPolice ? (
+        <div className="animate-in fade-in slide-in-from-bottom-2">
+           <div className="p-6 md:p-8 border border-blue-200 rounded-2xl bg-[#eff6ff] shadow-sm space-y-6 lg:w-1/2">
+            <h3 className="font-bold text-lg text-blue-900">Constabulary (Scene)</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-blue-800 mb-2">CONS'T NAME</label>
+                <input type="text" name="constName" className="w-full border border-blue-200 rounded-lg p-3 bg-white focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-blue-800 mb-2">CONS'T NUMBER</label>
+                <input type="text" name="constNumber" className="w-full border border-blue-200 rounded-lg p-3 bg-white focus:ring-blue-500" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Transport Stats: M.E. only */}
+      {isME && (
+        <div className="p-6 md:p-8 border border-slate-300 rounded-2xl bg-slate-50 relative z-10 space-y-8 shadow-sm animate-in fade-in slide-in-from-bottom-2">
+          <h3 className="font-bold text-xl text-slate-900 flex items-center gap-3 border-b border-slate-200 pb-4">
+            <span className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-sm font-black">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </span>
+            Transport Timing & Mileage
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Time Left MB</label>
+              <input type="time" name="timeLeftMB" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Arrive @ Scene</label>
+              <input type="time" name="arriveScene" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Depart From Scene</label>
+              <input type="time" name="departScene" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Arrive @ Hospital</label>
+              <input type="time" name="arriveHospital" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8 pt-6 border-t border-slate-200">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Mileage out</label>
+              <input type="number" name="mileageOut" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Mileage Return</label>
+              <input type="number" name="mileageReturn" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Total Mileage</label>
+              <input type="number" name="totalMileage" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+          </div>
+        </div>
+      )}
+
+
+
+      {/* Internal tracking context wrapper, no boxes outside it */}
+      <div className="pt-10 space-y-6 opacity-75 hover:opacity-100 transition-opacity">
+        <h4 className="text-sm font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2">CG Connect Tracking Details</h4>
+        
+        <div className="grid grid-cols-1 gap-8">
+          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="space-y-4">
+              <label className="block text-sm font-bold text-slate-900 uppercase tracking-wide">Two Transfer Staff Approved?</label>
+              <div className="flex gap-8">
+                <label className="flex items-center gap-3 cursor-pointer group">
                   <input type="radio" name="twoStaffApproved" value="Yes" className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" />
-                  <span className="text-base font-medium text-slate-800">Yes</span>
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900">Yes</span>
                 </label>
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer group">
                   <input type="radio" name="twoStaffApproved" value="No" className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" />
-                  <span className="text-base font-medium text-slate-800">No</span>
+                  <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900">No</span>
                 </label>
               </div>
             </div>
           </div>
         </div>
-      )}
-
-      <div className="relative z-10">
-        <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
-        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[100px]" placeholder="Any additional narrative context..."></textarea>
+        
+        <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm mt-4">
+          <label className="block text-sm font-bold text-slate-900 mb-2 uppercase tracking-wide">Internal Notes</label>
+          <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[100px]"></textarea>
+        </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const renderIncidentForm = () => (
     <div className="space-y-6 relative">
@@ -268,11 +446,39 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
     </div>
   );
 
+  const renderTimeOffForm = () => (
+    <div className="space-y-6 relative">
+      <div className="bg-brand-50/50 border border-brand-100 rounded-xl p-6 mb-8 text-center">
+         <h3 className="text-brand-800 font-bold mb-1 flex justify-center items-center gap-2">
+            <Clock className="w-5 h-5" /> Request Time Off
+         </h3>
+         <p className="text-sm text-brand-700 font-medium">Managers will be instantly notified to authorize this schedule blockage.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
+          <input type="date" name="startDate" className="w-full border border-slate-200 rounded-lg p-3 bg-white focus:ring-2 focus:ring-brand-500" required />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">End Date (Inclusive)</label>
+          <input type="date" name="endDate" className="w-full border border-slate-200 rounded-lg p-3 bg-white focus:ring-2 focus:ring-brand-500" required />
+        </div>
+      </div>
+
+      <div className="relative z-10">
+        <label className="block text-sm font-medium text-slate-700 mb-2">Reason (Optional)</label>
+        <textarea name="reason" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[120px] focus:ring-2 focus:ring-brand-500" placeholder="Vacation, Personal Day, Medical, etc."></textarea>
+      </div>
+    </div>
+  );
+
   const getTitle = () => {
     switch(params.type) {
       case "timesheet": return "Submit Timesheet";
       case "transfer": return "Log Transfer Record";
       case "incident": return "File Incident Report";
+      case "time-off": return "Request Time Off";
       default: return `Submit ${params.type}`;
     }
   };
@@ -282,6 +488,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
       case "timesheet": return renderTimesheetForm();
       case "transfer": return renderTransferForm();
       case "incident": return renderIncidentForm();
+      case "time-off": return renderTimeOffForm();
       default: return <p className="text-slate-500">Generic form for {params.type}</p>;
     }
   };

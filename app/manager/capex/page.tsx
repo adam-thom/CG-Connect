@@ -2,7 +2,7 @@ import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { CapExForm } from '@/components/CapExForm';
-import { LOCATION_CONFIG } from '@/components/GlobalBudgetCard';
+import { GlobalLocationBar, LOCATION_CONFIG } from '@/components/GlobalBudgetCard';
 import Link from 'next/link';
 import { FileText, Clock, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -89,43 +89,12 @@ export default async function ManagerCapExDashboard() {
 
       {/* Per-location budget bars */}
       {locations.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-          <h2 className="font-bold text-slate-900 mb-5">Your Location Budgets</h2>
-          <div className="space-y-5">
-            {locationBudgets.map(lb => {
-              const cfg = LOCATION_CONFIG[lb.location];
-              if (!cfg) return null;
-              const pct = lb.budget > 0 ? Math.min((lb.spent / lb.budget) * 100, 100) : 0;
-              const remainingPct = 100 - pct;
-              return (
-                <div key={lb.location}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs font-black tracking-wider px-2.5 py-1 rounded-md ${cfg.bg} ${cfg.text}`}>
-                      {cfg.label}
-                    </span>
-                    {lb.budget > 0 ? (
-                      <span className="text-sm font-bold text-slate-700">
-                        ${lb.spent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                        <span className="text-slate-400 font-medium"> / ${lb.budget.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                      </span>
-                    ) : (
-                      <span className="text-xs font-bold text-slate-400">Budget not yet assigned</span>
-                    )}
-                  </div>
-                  <div className="h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
-                    {lb.budget > 0 && (
-                      <div
-                        className={`h-full ${cfg.bar} transition-all duration-700 ease-out rounded-full`}
-                        style={{ width: `${remainingPct}%` }}
-                      />
-                    )}
-                  </div>
-                  {lb.budget > 0 && (
-                    <p className="text-[10px] font-bold text-slate-400 mt-1">{remainingPct.toFixed(0)}% remaining</p>
-                  )}
-                </div>
-              );
-            })}
+        <div className="space-y-4">
+          <h2 className="font-bold text-slate-900 mb-2">Assigned Location Budgets</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {locationBudgets.map(lb => (
+              <GlobalLocationBar key={lb.location} lb={lb} readOnly />
+            ))}
           </div>
         </div>
       )}

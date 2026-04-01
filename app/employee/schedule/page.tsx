@@ -4,15 +4,23 @@ import { useAuth } from "@/lib/auth-context";
 import { MOCK_SCHEDULE_ENTRIES } from "@/lib/mock-data";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, Truck, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchAllApprovedTimeOffs } from "@/app/actions/submissions";
+import { useState, useEffect } from "react";
 
 export default function EmployeeSchedule() {
   const { user } = useAuth();
+  const [approvedTimeOffs, setApprovedTimeOffs] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAllApprovedTimeOffs().then(setApprovedTimeOffs);
+  }, []);
   
   if (!user) return null;
 
   // Mocking October 2026 starting on Thursday (4)
   const daysInMonth = 31;
   const startDay = 4; // 0=Sun, 1=Mon, ..., 4=Thu
+  const currentMonthDateString = "2026-10-"; 
   
   const getRoleIcon = (roleType: string) => {
     switch (roleType) {
@@ -23,7 +31,24 @@ export default function EmployeeSchedule() {
     }
   };
 
-  const currentMonthDateString = "2026-10-"; // Helper 
+  // Build Weeks Array for Calendar Grid
+  const weeks: any[][] = [];
+  let currentWeek: any[] = [];
+  for(let i = 0; i < startDay; i++) currentWeek.push(null);
+  
+  for(let i = 1; i <= daysInMonth; i++) {
+    const dayStr = String(i).padStart(2, '0');
+    currentWeek.push({ dayNum: i, dateStr: `${currentMonthDateString}${dayStr}` });
+    
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+  if (currentWeek.length > 0) {
+    while(currentWeek.length < 7) currentWeek.push(null);
+    weeks.push(currentWeek);
+  }
 
   return (
     <div className="animate-in fade-in duration-500 pb-12">
@@ -49,9 +74,10 @@ export default function EmployeeSchedule() {
         </div>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-8 items-start">
+      <div className="flex flex-col xl:flex-row gap-8 items-start relative z-0">
         {/* Calendar Grid */}
         <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden w-full">
+          {/* Header */}
           <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
               <div key={d} className="py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -60,64 +86,112 @@ export default function EmployeeSchedule() {
             ))}
           </div>
           
-          <div className="grid grid-cols-7 auto-rows-[120px]">
-            {/* Empty padding blocks */}
-            {Array.from({ length: startDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="border-r border-b border-slate-100 bg-slate-50/30 p-2 opacity-50"></div>
-            ))}
-            
-            {/* Real day blocks */}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const dayStr = String(i + 1).padStart(2, '0');
-              const dateKey = `${currentMonthDateString}${dayStr}`;
-              
-              // Find entries for this day
-              const dayEntries = MOCK_SCHEDULE_ENTRIES.filter(e => e.date === dateKey);
-              const isMyShift = dayEntries.some(e => e.userId === user.id);
-              
-              return (
-                <div 
-                  key={i} 
-                  className={cn(
-                    "border-r border-b border-slate-100 p-2.5 transition-colors relative group",
-                    isMyShift ? "bg-accent-50/30" : "hover:bg-slate-50"
-                  )}
-                >
-                  <span className={cn(
-                    "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full mb-1",
-                    isMyShift ? "bg-accent-600 text-white" : "text-slate-700",
-                    isMyShift === false && dateKey === "2026-10-02" && "bg-brand-900 text-white" // highlight today
-                  )}>
-                    {i + 1}
-                  </span>
-                  
-                  <div className="space-y-1.5 overflow-y-auto max-h-[80px] scrollbar-hide">
-                    {dayEntries.map((entry, idx) => {
-                      const isMe = entry.userId === user.id;
+          {/* Weeks Grid */}
+          <div className="flex flex-col relative">
+            {weeks.map((week, wIdx) => {
+               const activeDays = week.filter(d => d !== null);
+               const weekStartStr = activeDays[0]?.dateStr;
+               const weekEndStr = activeDays[activeDays.length - 1]?.dateStr;
+
+               return (
+                 <div key={wIdx} className="grid grid-cols-7 relative auto-rows-[120px] border-b border-slate-200 last:border-b-0 group">
+                    {/* Background cells & standard schedule entries */}
+                    {week.map((day, dIdx) => {
+                      if (!day) return <div key={dIdx} className="border-r border-slate-100 bg-slate-50/30 p-2 opacity-50"></div>;
+                      
+                      const isToday = day.dateStr === "2026-10-02";
+                      const dayEntries = MOCK_SCHEDULE_ENTRIES.filter(e => e.date === day.dateStr);
+                      const isMyShift = dayEntries.some(e => e.userId === user.id);
+
                       return (
                         <div 
-                          key={entry.id} 
+                          key={dIdx} 
                           className={cn(
-                            "text-xs px-2 py-1 rounded truncate flex items-center justify-between font-medium border",
-                            isMe 
-                              ? "bg-white border-accent-200 text-accent-700 shadow-sm" 
-                              : "bg-white border-slate-200 text-slate-600"
+                            "border-r last:border-r-0 border-slate-100 p-2.5 transition-colors relative group",
+                            isMyShift ? "bg-accent-50/20" : "hover:bg-slate-50"
                           )}
                         >
-                          <span>{entry.roleType}</span>
-                          {getRoleIcon(entry.roleType)}
+                          <span className={cn(
+                            "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full mb-1 z-20 relative",
+                            isMyShift ? "bg-accent-600 text-white shadow-sm" : "text-slate-700",
+                            isMyShift === false && isToday && "bg-brand-900 text-white shadow-sm" // highlight today
+                          )}>
+                            {day.dayNum}
+                          </span>
+                          
+                          <div className="space-y-1.5 overflow-y-auto max-h-[80px] scrollbar-hide z-20 relative mt-3">
+                            {dayEntries.map(entry => {
+                              const isMe = entry.userId === user.id;
+                              return (
+                                <div 
+                                  key={entry.id} 
+                                  className={cn(
+                                    "text-xs px-2 py-1 rounded truncate flex items-center justify-between font-medium border shadow-sm backdrop-blur-sm",
+                                    isMe 
+                                      ? "bg-white/90 border-accent-200 text-accent-700" 
+                                      : "bg-white/90 border-slate-200 text-slate-600"
+                                  )}
+                                >
+                                  <span>{entry.roleType}</span>
+                                  {getRoleIcon(entry.roleType)}
+                                </div>
+                              )
+                            })}
+                          </div>
                         </div>
-                      )
+                      );
                     })}
-                  </div>
-                </div>
-              );
+
+                    {/* Foreground Bar Overlay for Time Off */}
+                    <div className="absolute inset-x-0 top-10 bottom-0 grid grid-cols-7 pointer-events-none z-10 px-0.5 gap-y-0.5 content-start">
+                       {approvedTimeOffs.map((toff, tIdx) => {
+                          const offStart = toff.startDate;
+                          const offEnd = toff.endDate;
+
+                          // Check overlap
+                          if (offEnd < weekStartStr || offStart > weekEndStr) return null;
+
+                          // Calculate span within this block
+                          let startCol = week.findIndex(d => d && d.dateStr >= offStart);
+                          if (startCol === -1) startCol = week.findIndex(d => d !== null);
+
+                          let endCol = week.findLastIndex(d => d && d.dateStr <= offEnd);
+                          if (endCol === -1) endCol = week.findLastIndex(d => d !== null);
+
+                          const colSpan = endCol - startCol + 1;
+
+                          const colors = [
+                             "bg-amber-700/60 text-amber-900 border-amber-800",
+                             "bg-rose-700/60 text-rose-900 border-rose-800",
+                             "bg-indigo-700/60 text-indigo-900 border-indigo-800",
+                             "bg-teal-700/60 text-teal-900 border-teal-800",
+                             "bg-brand-700/60 text-brand-900 border-brand-800"
+                          ];
+                          const colorClass = colors[(toff.userId.charCodeAt(0) || 0) % colors.length];
+
+                          return (
+                            <div 
+                              key={`${toff.id}-${wIdx}`} 
+                              className={cn(
+                                "flex items-center justify-center py-0.5 px-2 text-[10px] sm:text-xs font-bold tracking-[0.2em] uppercase rounded shadow-sm text-white",
+                                colorClass,
+                                toff.userId === user.id && "bg-red-600 text-white border-red-700 shadow-md ring-2 ring-red-400 ring-offset-1"
+                              )}
+                              style={{ gridColumnStart: startCol + 1, gridColumnEnd: `span ${colSpan}` }}
+                            >
+                              <span className="truncate drop-shadow-md">{toff.userName.split(' ')[0]} OFF</span>
+                            </div>
+                          );
+                       })}
+                    </div>
+                 </div>
+               )
             })}
           </div>
         </div>
 
         {/* Sidebar Info */}
-        <div className="w-full xl:w-80 space-y-6 shrink-0">
+        <div className="w-full xl:w-80 space-y-6 shrink-0 relative z-0">
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
             <h3 className="font-semibold text-brand-900 mb-4 flex items-center gap-2 pb-3 border-b border-slate-100">
               <CalendarIcon className="w-5 h-5 text-brand-500" />

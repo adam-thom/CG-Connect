@@ -54,15 +54,33 @@ model Tag {
   assignedIncidentReports IncidentReport[] @relation("IncidentTagApprovers")
   assignedTimeOff         TimeOffRequest[] @relation("TimeOffTagApprovers")
   assignedFunding         FundingRequest[] @relation("FundingTagApprovers")
+
+  visibleDocuments Document[] @relation("DocumentVisibilityTags")
+}
+
+model DocumentCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  
+  documents   Document[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model Document {
   id         String @id @default(cuid())
   name       String
   type       String // "pdf", "docx", "xlsx"
-  category   String // "POLICY MANUALS", "STANDARDS OF PRACTICE", etc.
   sizeBytes  Int
-  sharedWith String // "all", "managers", "specific"
+  
+  categoryId String
+  category   DocumentCategory @relation(fields: [categoryId], references: [id])
+
+  visibilityTags Tag[] @relation("DocumentVisibilityTags")
+
+  filePath   String? // Store physical file path on server
 
   authorId String?
   author   User?   @relation("DocumentUploader", fields: [authorId], references: [id])
@@ -134,14 +152,38 @@ model TransferRecord {
   time             String?
   team             String?
   transferType     String? // "Standard", "M.E.", "Non-M.E. Police"
+  
+  callerName       String?
+  callerPhone      String?
+  funeralDirectorAssigning String? // Display string / id reference if needed
+  destination      String? // Where to take the body
   deceasedName     String?
+  deceasedAge      String?
+  deceasedSex      String?
+  deceasedDob      DateTime?
+  deceasedDod      DateTime?
   placeOfDeath     String?
+  
+  valuables        String?
   nokName          String?
   nokRelation      String?
   nokContact       String?
+  
+  specialInstructions String?
+  medicalExaminerName String?
+  dateToME         DateTime?
+  
   constName        String?
   constNumber      String?
-  meName           String?
+  
+  timeLeftMB       String?
+  arriveScene      String?
+  departScene      String?
+  arriveHospital   String?
+  mileageOut       String?
+  mileageReturn    String?
+  totalMileage     String?
+
   twoStaffApproved String? // Changed to String? since form submits 'Yes' or 'No'. DB type previously Boolean?
   notes            String?
 

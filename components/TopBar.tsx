@@ -1,13 +1,13 @@
 "use client";
 
 import { useAuth } from '@/lib/auth-context';
-import { Search, Bell, LogOut, Loader2 } from 'lucide-react';
+import { Search, Bell, LogOut, Loader2, Menu } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { switchDevRole } from '@/app/actions/dev';
 
-export function TopBar() {
+export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
@@ -17,9 +17,17 @@ export function TopBar() {
   if (!user) return null;
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10 w-full animate-in slide-in-from-top-4 duration-500">
-      <div className="flex-1 flex max-w-xl">
-        <div className="relative w-full group">
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 w-full animate-in slide-in-from-top-4 duration-500">
+      
+      <div className="flex items-center gap-3 flex-1 max-w-xl">
+        <button 
+          onClick={onMenuClick}
+          className="md:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        
+        <div className="relative w-full group hidden sm:block">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-slate-400 group-focus-within:text-brand-500 transition-colors" />
           </div>

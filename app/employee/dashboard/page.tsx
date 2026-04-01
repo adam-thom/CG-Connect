@@ -115,6 +115,16 @@ export default function EmployeeDashboard() {
                 <p className="text-sm text-slate-500 mt-1">Report a safety or operational issue.</p>
               </div>
             </Link>
+
+            <Link href="/employee/submissions/new/time-off" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow hover:border-brand-300 transition-all group flex items-start gap-4">
+              <div className="p-3 bg-amber-50 rounded-xl group-hover:bg-amber-100 transition-colors">
+                <Clock className="w-6 h-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-brand-900">Request Time Off</h3>
+                <p className="text-sm text-slate-500 mt-1">Book your scheduled days off.</p>
+              </div>
+            </Link>
             
             <Link href="/employee/schedule" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow hover:border-brand-300 transition-all group flex items-start gap-4">
               <div className="p-3 bg-indigo-50 rounded-xl group-hover:bg-indigo-100 transition-colors">

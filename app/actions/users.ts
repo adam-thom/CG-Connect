@@ -25,6 +25,22 @@ export async function fetchDetailedUsers() {
   });
 }
 
+export async function fetchFuneralDirectors() {
+  return prisma.user.findMany({
+    where: {
+      tags: {
+        some: {
+          name: 'Funeral Director'
+        }
+      }
+    },
+    select: {
+      id: true,
+      name: true
+    }
+  });
+}
+
 export async function fetchUserById(id: string) {
   const currentUser = await getSessionUser();
   if (!currentUser || currentUser.role !== 'admin') {

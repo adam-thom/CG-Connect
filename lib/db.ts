@@ -10,10 +10,11 @@ const prismaClientSingleton = () => {
 
 
 declare const globalThis: {
-  prismaGlobal: ReturnType<typeof prismaClientSingleton>;
+  prismaGlobal: ReturnType<typeof prismaClientSingleton> | undefined;
 } & typeof global;
 
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton();
+// Temporarily bypass global cache to ensure schema updates reflect
+const prisma = prismaClientSingleton();
 
 export default prisma;
 

@@ -4,6 +4,17 @@ import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
+// =========================================================================
+// STATUS NORMALIZATION
+// Convention: DB stores UPPERCASE ("PENDING", "APPROVED", "REVISION-REQUIRED")
+//             App/UI uses lowercase ("pending", "approved", "revision-required")
+// =========================================================================
+const toDbStatus = (s: string) => s.toUpperCase();
+const toAppStatus = (s: string) => s.toLowerCase();
+
+// =========================================================================
+// FORM SUBMISSION (Employee)
+// =========================================================================
 export async function submitFormAction(formType: string, prevState: any, formData: FormData) {
   const user = await getSessionUser();
   if (!user) {
@@ -49,6 +60,7 @@ export async function submitFormAction(formType: string, prevState: any, formDat
           overTime: formData.get('ot') ? parseFloat(formData.get('ot') as string) : null,
           transferTime: formData.get('transferTime') ? parseFloat(formData.get('transferTime') as string) : null,
           totalHours: formData.get('total') ? parseFloat(formData.get('total') as string) : null,
+          status: user.role === 'manager' || user.role === 'admin' ? 'APPROVED' : 'PENDING'
         }
       });
     } else if (formType === 'transfer') {
@@ -60,16 +72,43 @@ export async function submitFormAction(formType: string, prevState: any, formDat
           time: formData.get('time') as string || null,
           team: formData.get('team') as string || null,
           transferType: formData.get('transferType') as string || null,
+          
+          callerName: formData.get('callerName') as string || null,
+          callerPhone: formData.get('callerPhone') as string || null,
+          funeralDirectorAssigning: formData.get('funeralDirectorAssigning') as string || null,
+          destination: formData.get('destination') as string || null,
+          
           deceasedName: formData.get('deceasedName') as string || null,
+          deceasedAge: formData.get('deceasedAge') as string || null,
+          deceasedSex: formData.get('deceasedSex') as string || null,
+          deceasedDob: formData.get('deceasedDob') ? new Date(formData.get('deceasedDob') as string) : null,
+          deceasedDod: formData.get('deceasedDod') ? new Date(formData.get('deceasedDod') as string) : null,
           placeOfDeath: formData.get('placeOfDeath') as string || null,
+          
+          valuables: formData.get('valuables') as string || null,
+          
           nokName: formData.get('nokName') as string || null,
           nokRelation: formData.get('nokRelation') as string || null,
           nokContact: formData.get('nokContact') as string || null,
+          
+          specialInstructions: formData.get('specialInstructions') as string || null,
+          medicalExaminerName: formData.get('medicalExaminerName') as string || null,
+          dateToME: formData.get('dateToME') ? new Date(formData.get('dateToME') as string) : null,
+          
           constName: formData.get('constName') as string || null,
           constNumber: formData.get('constNumber') as string || null,
-          meName: formData.get('meName') as string || null,
+          
+          timeLeftMB: formData.get('timeLeftMB') as string || null,
+          arriveScene: formData.get('arriveScene') as string || null,
+          departScene: formData.get('departScene') as string || null,
+          arriveHospital: formData.get('arriveHospital') as string || null,
+          mileageOut: formData.get('mileageOut') as string || null,
+          mileageReturn: formData.get('mileageReturn') as string || null,
+          totalMileage: formData.get('totalMileage') as string || null,
+          
           twoStaffApproved: formData.get('twoStaffApproved') as string || null,
           notes: formData.get('notes') as string || null,
+          status: user.role === 'manager' || user.role === 'admin' ? 'APPROVED' : 'PENDING'
         }
       });
     } else if (formType === 'incident') {
@@ -82,6 +121,18 @@ export async function submitFormAction(formType: string, prevState: any, formDat
           nature: formData.get('nature') as string || null,
           notes: formData.get('notes') as string || null,
           certified: formData.get('certified') ? 'Yes' : null,
+          status: 'PENDING' // Incidents ALWAYS default to pending
+        }
+      });
+    } else if (formType === 'time-off') {
+      await prisma.timeOffRequest.create({
+        data: {
+          submitterId: user.id,
+          assignedTags: { connect: assignedTagsConnect },
+          startDate: formData.get('startDate') ? new Date(formData.get('startDate') as string) : new Date(),
+          endDate: formData.get('endDate') ? new Date(formData.get('endDate') as string) : new Date(),
+          reason: formData.get('reason') as string || null,
+          status: user.role === 'manager' || user.role === 'admin' ? 'APPROVED' : 'PENDING'
         }
       });
     }
@@ -106,16 +157,18 @@ export async function fetchMySubmissions() {
   if (!user) return [];
 
   // Parallel fetch across all schemas
-  const [timesheets, transfers, incidents] = await Promise.all([
+  const [timesheets, transfers, incidents, timeOffs] = await Promise.all([
     prisma.timesheet.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } }),
     prisma.transferRecord.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } }),
-    prisma.incidentReport.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } })
+    prisma.incidentReport.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } }),
+    prisma.timeOffRequest.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } })
   ]);
 
   const unified = [
-    ...timesheets.map(t => ({ id: t.id, type: 'timesheet', status: t.status as any, submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
-    ...transfers.map(t => ({ id: t.id, type: 'transfer', status: t.status as any, submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
-    ...incidents.map(t => ({ id: t.id, type: 'incident', status: t.status as any, submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
+    ...timesheets.map(t => ({ id: t.id, type: 'timesheet', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...transfers.map(t => ({ id: t.id, type: 'transfer', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...incidents.map(t => ({ id: t.id, type: 'incident', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...timeOffs.map(t => ({ id: t.id, type: 'time-off', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
   ];
 
   return unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -130,7 +183,7 @@ export async function fetchManagerQueue() {
   // We find Submissions that are connected to ANY of the manager's tags.
   // Prisma relation filtering: assignedTags: { some: { name: { in: managerTagNames } } }
   
-  const [timesheets, transfers, incidents] = await Promise.all([
+  const [timesheets, transfers, incidents, timeOffs] = await Promise.all([
     prisma.timesheet.findMany({
       where: { assignedTags: { some: { name: { in: managerTagNames } } } },
       include: { submitter: { select: { name: true, email: true } } },
@@ -145,52 +198,344 @@ export async function fetchManagerQueue() {
       where: { assignedTags: { some: { name: { in: managerTagNames } } } },
       include: { submitter: { select: { name: true, email: true } } },
       orderBy: { createdAt: 'desc' }
+    }),
+    prisma.timeOffRequest.findMany({
+      where: { assignedTags: { some: { name: { in: managerTagNames } } } },
+      include: { submitter: { select: { name: true, email: true } } },
+      orderBy: { createdAt: 'desc' }
     })
   ]);
 
   const unified = [
-    ...timesheets.map(t => ({ id: t.id, type: 'timesheet', status: t.status.toLowerCase() as any, submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
-    ...transfers.map(t => ({ id: t.id, type: 'transfer', status: t.status.toLowerCase() as any, submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
-    ...incidents.map(t => ({ id: t.id, type: 'incident', status: t.status.toLowerCase() as any, submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
+    ...timesheets.map(t => ({ id: t.id, type: 'timesheet', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...transfers.map(t => ({ id: t.id, type: 'transfer', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...incidents.map(t => ({ id: t.id, type: 'incident', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...timeOffs.map(t => ({ id: t.id, type: 'time-off', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
   ];
 
   return unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
 
-export async function fetchSubmissionById(id: string) {
-  // Determine which table it lives in dynamically based on ID signature if we customized them, 
-  // OR just gracefully attempt to query the native CUID against all 3.
-  const [timesheet, transfer, incident] = await Promise.all([
-    prisma.timesheet.findUnique({ where: { id } }),
-    prisma.transferRecord.findUnique({ where: { id } }),
-    prisma.incidentReport.findUnique({ where: { id } })
+// =========================================================================
+// FETCH FULL SUBMISSION (with comments + submitter name)
+// =========================================================================
+
+type CommentWithAuthor = {
+  id: string;
+  content: string;
+  createdAt: string;
+  authorId: string;
+  authorName: string;
+  authorRole: string;
+};
+
+type FullSubmission = {
+  id: string;
+  type: string;
+  status: string;
+  submitterId: string;
+  submitterName: string;
+  createdAt: string;
+  updatedAt: string;
+  data: Record<string, any>;
+  comments: CommentWithAuthor[];
+};
+
+function serializeComment(c: any): CommentWithAuthor {
+  return {
+    id: c.id,
+    content: c.content,
+    createdAt: c.createdAt.toISOString(),
+    authorId: c.authorId,
+    authorName: c.author?.name || c.author?.email || c.authorId,
+    authorRole: c.author?.role || 'employee',
+  };
+}
+
+export async function fetchSubmissionById(id: string): Promise<FullSubmission | null> {
+  const submitterSelect = { select: { name: true, email: true } };
+  const commentInclude = { include: { author: { select: { name: true, email: true, role: true } } }, orderBy: { createdAt: 'asc' } as const };
+
+  const [timesheet, transfer, incident, timeOff] = await Promise.all([
+    prisma.timesheet.findUnique({
+      where: { id },
+      include: { submitter: submitterSelect, comments: commentInclude }
+    }),
+    prisma.transferRecord.findUnique({
+      where: { id },
+      include: { submitter: submitterSelect, comments: commentInclude }
+    }),
+    prisma.incidentReport.findUnique({
+      where: { id },
+      include: { submitter: submitterSelect, comments: commentInclude }
+    }),
+    prisma.timeOffRequest.findUnique({
+      where: { id },
+      include: { submitter: submitterSelect, comments: commentInclude }
+    }),
   ]);
 
-  if (timesheet) return { id: timesheet.id, type: 'timesheet', status: timesheet.status.toLowerCase(), submitterId: timesheet.submitterId, createdAt: timesheet.createdAt.toISOString(), updatedAt: timesheet.updatedAt.toISOString(), data: timesheet, feedbackThread: [] };
-  if (transfer) return { id: transfer.id, type: 'transfer', status: transfer.status.toLowerCase(), submitterId: transfer.submitterId, createdAt: transfer.createdAt.toISOString(), updatedAt: transfer.updatedAt.toISOString(), data: transfer, feedbackThread: [] };
-  if (incident) return { id: incident.id, type: 'incident', status: incident.status.toLowerCase(), submitterId: incident.submitterId, createdAt: incident.createdAt.toISOString(), updatedAt: incident.updatedAt.toISOString(), data: incident, feedbackThread: [] };
-  
+  if (timesheet) {
+    const { submitter, comments, id: _id, submitterId, status, createdAt, updatedAt, ...fields } = timesheet;
+    return {
+      id: _id, type: 'timesheet', status: toAppStatus(status), submitterId,
+      submitterName: submitter.name || submitter.email,
+      createdAt: createdAt.toISOString(), updatedAt: updatedAt.toISOString(),
+      data: { date: fields.date?.toISOString() ?? null, timeIn: fields.timeIn, timeOut: fields.timeOut, lunchHour: fields.lunchHour, overTime: fields.overTime, transferTime: fields.transferTime, totalHours: fields.totalHours },
+      comments: comments.map(serializeComment),
+    };
+  }
+
+  if (transfer) {
+    const { submitter, comments, id: _id, submitterId, status, createdAt, updatedAt, ...fields } = transfer;
+    return {
+      id: _id, type: 'transfer', status: toAppStatus(status), submitterId,
+      submitterName: submitter.name || submitter.email,
+      createdAt: createdAt.toISOString(), updatedAt: updatedAt.toISOString(),
+      data: { 
+        ...fields,
+        date: fields.date?.toISOString() ?? null,
+        deceasedDob: fields.deceasedDob?.toISOString() ?? null,
+        deceasedDod: fields.deceasedDod?.toISOString() ?? null,
+        dateToME: fields.dateToME?.toISOString() ?? null,
+      },
+      comments: comments.map(serializeComment),
+    };
+  }
+
+  if (incident) {
+    const { submitter, comments, id: _id, submitterId, status, createdAt, updatedAt, ...fields } = incident;
+    return {
+      id: _id, type: 'incident', status: toAppStatus(status), submitterId,
+      submitterName: submitter.name || submitter.email,
+      createdAt: createdAt.toISOString(), updatedAt: updatedAt.toISOString(),
+      data: { incidentDate: fields.incidentDate?.toISOString() ?? null, incidentLocation: fields.incidentLocation, nature: fields.nature, notes: fields.notes, certified: fields.certified },
+      comments: comments.map(serializeComment),
+    };
+  }
+
+  if (timeOff) {
+    const { submitter, comments, id: _id, submitterId, status, createdAt, updatedAt, ...fields } = timeOff;
+    return {
+      id: _id, type: 'time-off', status: toAppStatus(status), submitterId,
+      submitterName: submitter.name || submitter.email,
+      createdAt: createdAt.toISOString(), updatedAt: updatedAt.toISOString(),
+      data: { startDate: fields.startDate?.toISOString() || null, endDate: fields.endDate?.toISOString() || null, reason: fields.reason },
+      comments: comments.map(serializeComment),
+    };
+  }
+
   return null;
 }
 
-export async function updateSubmissionStatusAdmin(id: string, type: string, newStatus: string) {
+// =========================================================================
+// COMMENTS
+// =========================================================================
+
+export async function addComment(submissionId: string, type: string, content: string) {
   const user = await getSessionUser();
-  if (!user || user.role !== 'manager') throw new Error("Unauthorized Access");
+  if (!user) throw new Error('Authentication required');
+  if (!content.trim()) throw new Error('Comment cannot be empty');
 
-  let result;
-  // Prisma uppercase enums are mapped back here safely
-  const formattedStatus = newStatus.toUpperCase();
-
-  switch(type) {
-    case 'timesheet':
-      result = await prisma.timesheet.update({ where: { id }, data: { status: formattedStatus }}); break;
-    case 'transfer':
-      result = await prisma.transferRecord.update({ where: { id }, data: { status: formattedStatus }}); break;
-    case 'incident':
-      result = await prisma.incidentReport.update({ where: { id }, data: { status: formattedStatus }}); break;
-    default:
-      throw new Error("Invalid formulation routing parameter.");
+  const linkField: Record<string, { connect: { id: string } }> = {};
+  switch (type) {
+    case 'timesheet': linkField.timesheet = { connect: { id: submissionId } }; break;
+    case 'transfer': linkField.transferRecord = { connect: { id: submissionId } }; break;
+    case 'incident': linkField.incidentReport = { connect: { id: submissionId } }; break;
+    case 'time-off': linkField.timeOffRequest = { connect: { id: submissionId } }; break;
+    default: throw new Error('Invalid submission type');
   }
-  
+
+  const comment = await prisma.comment.create({
+    data: {
+      content: content.trim(),
+      author: { connect: { id: user.id } },
+      ...linkField,
+    },
+    include: { author: { select: { name: true, email: true, role: true } } }
+  });
+
+  return serializeComment(comment);
+}
+
+// =========================================================================
+// EMPLOYEE EDIT (only when REVISION-REQUIRED)
+// =========================================================================
+
+export async function updateSubmissionData(id: string, type: string, fields: FormData) {
+  const user = await getSessionUser();
+  if (!user) throw new Error('Authentication required');
+
+  // Verify ownership & that the status allows edits
+  const lockedStatuses = ['APPROVED', 'FINALIZED'];
+
+  switch (type) {
+    case 'timesheet': {
+      const record = await prisma.timesheet.findUnique({ where: { id }, select: { submitterId: true, status: true } });
+      if (!record) throw new Error('Record not found');
+      if (record.submitterId !== user.id) throw new Error('Unauthorized');
+      if (lockedStatuses.includes(record.status)) throw new Error('This submission is locked and cannot be edited.');
+      await prisma.timesheet.update({
+        where: { id },
+        data: {
+          date: fields.get('date') ? new Date(fields.get('date') as string) : null,
+          timeIn: fields.get('timeIn') as string || null,
+          timeOut: fields.get('timeOut') as string || null,
+          lunchHour: fields.get('lunch') ? parseFloat(fields.get('lunch') as string) : null,
+          overTime: fields.get('ot') ? parseFloat(fields.get('ot') as string) : null,
+          transferTime: fields.get('transferTime') ? parseFloat(fields.get('transferTime') as string) : null,
+          totalHours: fields.get('total') ? parseFloat(fields.get('total') as string) : null,
+          status: 'PENDING', // Reset to pending after an employee edit
+        }
+      });
+      break;
+    }
+    case 'transfer': {
+      const record = await prisma.transferRecord.findUnique({ where: { id }, select: { submitterId: true, status: true } });
+      if (!record) throw new Error('Record not found');
+      if (record.submitterId !== user.id) throw new Error('Unauthorized');
+      if (lockedStatuses.includes(record.status)) throw new Error('This submission is locked and cannot be edited.');
+      await prisma.transferRecord.update({
+        where: { id },
+        data: {
+          date: fields.get('date') ? new Date(fields.get('date') as string) : null,
+          time: fields.get('time') as string || null,
+          team: fields.get('team') as string || null,
+          transferType: fields.get('transferType') as string || null,
+          
+          callerName: fields.get('callerName') as string || null,
+          callerPhone: fields.get('callerPhone') as string || null,
+          funeralDirectorAssigning: fields.get('funeralDirectorAssigning') as string || null,
+          destination: fields.get('destination') as string || null,
+          
+          deceasedName: fields.get('deceasedName') as string || null,
+          deceasedAge: fields.get('deceasedAge') as string || null,
+          deceasedSex: fields.get('deceasedSex') as string || null,
+          deceasedDob: fields.get('deceasedDob') ? new Date(fields.get('deceasedDob') as string) : null,
+          deceasedDod: fields.get('deceasedDod') ? new Date(fields.get('deceasedDod') as string) : null,
+          placeOfDeath: fields.get('placeOfDeath') as string || null,
+          
+          valuables: fields.get('valuables') as string || null,
+          
+          nokName: fields.get('nokName') as string || null,
+          nokRelation: fields.get('nokRelation') as string || null,
+          nokContact: fields.get('nokContact') as string || null,
+          
+          specialInstructions: fields.get('specialInstructions') as string || null,
+          medicalExaminerName: fields.get('medicalExaminerName') as string || null,
+          dateToME: fields.get('dateToME') ? new Date(fields.get('dateToME') as string) : null,
+          
+          constName: fields.get('constName') as string || null,
+          constNumber: fields.get('constNumber') as string || null,
+          
+          timeLeftMB: fields.get('timeLeftMB') as string || null,
+          arriveScene: fields.get('arriveScene') as string || null,
+          departScene: fields.get('departScene') as string || null,
+          arriveHospital: fields.get('arriveHospital') as string || null,
+          mileageOut: fields.get('mileageOut') as string || null,
+          mileageReturn: fields.get('mileageReturn') as string || null,
+          totalMileage: fields.get('totalMileage') as string || null,
+          
+          twoStaffApproved: fields.get('twoStaffApproved') as string || null,
+          notes: fields.get('notes') as string || null,
+          status: 'PENDING',
+        }
+      });
+      break;
+    }
+    case 'incident': {
+      const record = await prisma.incidentReport.findUnique({ where: { id }, select: { submitterId: true, status: true } });
+      if (!record) throw new Error('Record not found');
+      if (record.submitterId !== user.id) throw new Error('Unauthorized');
+      if (lockedStatuses.includes(record.status)) throw new Error('This submission is locked and cannot be edited.');
+      await prisma.incidentReport.update({
+        where: { id },
+        data: {
+          incidentDate: fields.get('incidentDate') ? new Date(fields.get('incidentDate') as string) : null,
+          incidentLocation: fields.get('incidentLocation') as string || null,
+          nature: fields.get('nature') as string || null,
+          notes: fields.get('notes') as string || null,
+          certified: fields.get('certified') ? 'Yes' : null,
+          status: 'PENDING',
+        }
+      });
+      break;
+    }
+    case 'time-off': {
+      const record = await prisma.timeOffRequest.findUnique({ where: { id }, select: { submitterId: true, status: true } });
+      if (!record) throw new Error('Record not found');
+      if (record.submitterId !== user.id) throw new Error('Unauthorized');
+      if (lockedStatuses.includes(record.status)) throw new Error('This submission is locked and cannot be edited.');
+      await prisma.timeOffRequest.update({
+        where: { id },
+        data: {
+          startDate: fields.get('startDate') ? new Date(fields.get('startDate') as string) : new Date(),
+          endDate: fields.get('endDate') ? new Date(fields.get('endDate') as string) : new Date(),
+          reason: fields.get('reason') as string || null,
+          status: user.role === 'manager' || user.role === 'admin' ? 'APPROVED' : 'PENDING',
+        }
+      });
+      break;
+    }
+    default:
+      throw new Error('Invalid submission type');
+  }
+
   return { success: true };
+}
+
+// =========================================================================
+// MANAGER / ADMIN STATUS UPDATE
+// =========================================================================
+
+export async function updateSubmissionStatus(id: string, type: string, newStatus: string) {
+  const user = await getSessionUser();
+  if (!user || (user.role !== 'manager' && user.role !== 'admin')) {
+    throw new Error('Unauthorized');
+  }
+
+  const dbStatus = toDbStatus(newStatus);
+
+  switch (type) {
+    case 'timesheet':
+      await prisma.timesheet.update({ where: { id }, data: { status: dbStatus } }); break;
+    case 'transfer':
+      await prisma.transferRecord.update({ where: { id }, data: { status: dbStatus } }); break;
+    case 'incident':
+      await prisma.incidentReport.update({ where: { id }, data: { status: dbStatus } }); break;
+    case 'time-off':
+      await prisma.timeOffRequest.update({ where: { id }, data: { status: dbStatus } }); break;
+    default:
+      throw new Error('Invalid submission type');
+  }
+
+  return { success: true, newStatus: toAppStatus(dbStatus) };
+}
+
+// Keep the old name as an alias for any existing references
+export { updateSubmissionStatus as updateSubmissionStatusAdmin };
+
+// =========================================================================
+// FETCH ALL APPROVED TIME OFF (For Scheduling)
+// =========================================================================
+export async function fetchAllApprovedTimeOffs() {
+  const user = await getSessionUser();
+  if (!user) return [];
+
+  const timeOffs = await prisma.timeOffRequest.findMany({
+    where: { status: 'APPROVED' },
+    include: {
+      submitter: {
+        select: { id: true, name: true }
+      }
+    }
+  });
+
+  return timeOffs.map(t => ({
+    id: t.id,
+    userId: t.submitterId,
+    userName: t.submitter.name,
+    startDate: t.startDate?.toISOString().split('T')[0] || '',
+    endDate: t.endDate?.toISOString().split('T')[0] || ''
+  }));
 }

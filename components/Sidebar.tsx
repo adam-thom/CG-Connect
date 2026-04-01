@@ -5,6 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useState } from 'react';
+import { NewSubmissionModal } from './NewSubmissionModal';
 import {
   LayoutDashboard,
   CalendarDays,
@@ -15,12 +17,15 @@ import {
   PlusCircle,
   User as UserIcon,
   Route,
-  Wallet
+  Wallet,
+  Bell,
+  X
 } from 'lucide-react';
 
-export function Sidebar() {
+export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () => void }) {
   const { user } = useAuth();
   const pathname = usePathname();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!user) return null;
 
@@ -32,6 +37,7 @@ export function Sidebar() {
     { name: 'Schedule', href: '/employee/schedule', icon: CalendarDays },
     { name: 'My Submissions', href: '/employee/submissions', icon: FileText },
     { name: 'Company Docs', href: '/employee/docs', icon: FolderOpen },
+    { name: 'Notifications', href: '/notifications', icon: Bell },
     { name: 'My Profile', href: '/employee/profile', icon: UserIcon },
   ];
 
@@ -42,7 +48,7 @@ export function Sidebar() {
     { name: 'Review Queue', href: '/manager/submissions', icon: FileText },
     { name: 'Capital Expenditures', href: '/manager/capex', icon: Wallet },
     { name: 'Document Vault', href: '/manager/docs', icon: FolderOpen },
-    { name: 'Staff Profiles', href: '/manager/staff', icon: Users },
+    { name: 'Notifications', href: '/notifications', icon: Bell },
   ];
 
   const adminLinks = [
@@ -50,27 +56,35 @@ export function Sidebar() {
     { name: 'Staff Directory', href: '/admin/users', icon: Users },
     { name: 'Document Control', href: '/admin/docs', icon: FolderOpen },
     { name: 'CapEx Oversight', href: '/admin/capex', icon: Wallet },
+    { name: 'Notifications', href: '/notifications', icon: Bell },
   ];
 
   const links = isAdmin ? adminLinks : isManager ? managerLinks : employeeLinks;
 
   return (
-    <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col z-20">
-      <div className="h-24 flex items-center px-6 border-b border-slate-100 shrink-0 bg-[#91665b]">
+    <aside className={cn(
+        "fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col z-40 transition-transform duration-300 md:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+    )}>
+      <div className="h-24 flex items-center px-6 border-b border-slate-100 shrink-0 bg-[#91665b] relative">
         <Link href={isAdmin ? "/admin/dashboard" : isManager ? "/manager/dashboard" : "/employee/dashboard"} className="block w-full">
           <Image src="/2026-CG-Branding-optomized.png" alt="The Caring Group" width={220} height={55} className="object-contain" />
         </Link>
+        <button 
+          onClick={onClose}
+          className="md:hidden absolute top-4 right-4 text-white/70 hover:text-white p-1 rounded-full transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       <div className="p-5 flex-1 overflow-y-auto">
-        {!isManager && !isAdmin && (
-          <div className="mb-8">
-            <button className="w-full bg-accent-600 hover:bg-accent-700 text-white rounded-xl py-2.5 px-4 flex items-center justify-center gap-2 font-medium transition-colors shadow-sm focus:ring-2 focus:ring-accent-500 focus:ring-offset-2">
-              <PlusCircle className="w-5 h-5" />
-              New Record
-            </button>
-          </div>
-        )}
+        <div className="mb-8">
+          <button onClick={() => setIsModalOpen(true)} className="w-full bg-accent-600 hover:bg-accent-700 text-white rounded-xl py-2.5 px-4 flex items-center justify-center gap-2 font-medium transition-colors shadow-sm focus:ring-2 focus:ring-accent-500 focus:ring-offset-2">
+            <PlusCircle className="w-5 h-5" />
+            New Record
+          </button>
+        </div>
 
         <nav className="space-y-1 mt-2">
           {links.map((link) => {
@@ -105,6 +119,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+      <NewSubmissionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </aside>
   );
 }
