@@ -77,13 +77,13 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                  <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">FULL NAME</label>
                     <input type="text" name="name" required disabled={isUpdating} defaultValue={user.name}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900" />
                  </div>
                  
                  <div className="grid grid-cols-2 gap-4">
                      <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">NETWORK ROLE</label>
-                        <select name="role" required disabled={isUpdating} defaultValue={user.role} className="w-full px-4 py-3 border-r-8 border-transparent bg-slate-50 border-y border-x border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900 cursor-pointer capitalize">
+                        <select name="role" required disabled={isUpdating} defaultValue={user.role} className="w-full px-4 py-3 border-r-8 border-transparent bg-slate-50 border-y border-x border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900 cursor-pointer capitalize">
                            <option value="employee">Employee</option>
                            <option value="manager">Manager</option>
                            <option value="admin">Admin</option>
@@ -92,20 +92,20 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                      <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">DEPARTMENT</label>
                         <input type="text" name="department" disabled={isUpdating} defaultValue={user.department}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900" />
                      </div>
                  </div>
 
                  <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">JOB TITLE</label>
                     <input type="text" name="title" disabled={isUpdating} defaultValue={user.title}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900" />
                  </div>
                  
                  <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">EMAIL IDENTIFIER</label>
                     <input type="email" name="email" required disabled={isUpdating} defaultValue={user.email}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900" />
                  </div>
              </div>
 
@@ -170,7 +170,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
           )}
 
           <div className="relative z-10 mt-10 pt-8 border-t border-slate-100 flex items-center justify-end gap-4">
-               <button type="submit" disabled={isUpdating} className="bg-[#A7705B] hover:bg-[#8B5A44] disabled:opacity-50 text-white px-8 py-3.5 rounded-full font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2 group justify-center">
+               <button type="submit" disabled={isUpdating} className="bg-[#91665b] hover:bg-[#674840] disabled:opacity-50 text-white px-8 py-3.5 rounded-full font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2 group justify-center">
                  {isUpdating ? 'Saving Framework...' : 'Commit Configuration Changes'}
                  {!isUpdating && <Save className="w-5 h-5" />}
                </button>

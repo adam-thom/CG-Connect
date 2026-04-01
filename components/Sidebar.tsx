@@ -14,7 +14,8 @@ import {
   CheckSquare,
   PlusCircle,
   User as UserIcon,
-  Route
+  Route,
+  Wallet
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -39,6 +40,7 @@ export function Sidebar() {
     { name: 'Dept Schedule', href: '/manager/schedule', icon: CalendarDays },
     { name: 'Timesheets', href: '/manager/timesheets', icon: CheckSquare },
     { name: 'Review Queue', href: '/manager/submissions', icon: FileText },
+    { name: 'Capital Expenditures', href: '/manager/capex', icon: Wallet },
     { name: 'Document Vault', href: '/manager/docs', icon: FolderOpen },
     { name: 'Staff Profiles', href: '/manager/staff', icon: Users },
   ];
@@ -47,13 +49,14 @@ export function Sidebar() {
     { name: 'Admin Console', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Staff Directory', href: '/admin/users', icon: Users },
     { name: 'Document Control', href: '/admin/docs', icon: FolderOpen },
+    { name: 'CapEx Oversight', href: '/admin/capex', icon: Wallet },
   ];
 
   const links = isAdmin ? adminLinks : isManager ? managerLinks : employeeLinks;
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-slate-200 flex flex-col z-20">
-      <div className="h-24 flex items-center px-6 border-b border-slate-100 shrink-0 bg-brand-900">
+      <div className="h-24 flex items-center px-6 border-b border-slate-100 shrink-0 bg-[#91665b]">
         <Link href={isAdmin ? "/admin/dashboard" : isManager ? "/manager/dashboard" : "/employee/dashboard"} className="block w-full">
           <Image src="/2026-CG-Branding-optomized.png" alt="The Caring Group" width={220} height={55} className="object-contain" />
         </Link>

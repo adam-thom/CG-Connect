@@ -35,6 +35,9 @@ model User {
   comments     Comment[]  @relation("CommentAuthor")
   uploadedDocs Document[] @relation("DocumentUploader")
 
+  quarterlyCapExBudget Float? @default(0)
+  capExRequests        CapExRequest[] @relation("CapExSubmitter")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -91,6 +94,9 @@ model Comment {
 
   fundingRequestId String?
   fundingRequest   FundingRequest? @relation(fields: [fundingRequestId], references: [id])
+
+  capExRequestId String?
+  capExRequest   CapExRequest? @relation(fields: [capExRequestId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,6 +203,23 @@ model FundingRequest {
   dateNeeded DateTime?
 
   status   String    @default("PENDING")
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CapExRequest {
+  id          String @id @default(cuid())
+  submitterId String
+  submitter   User   @relation("CapExSubmitter", fields: [submitterId], references: [id])
+
+  projectName String
+  location    String
+  amount      Float
+  quotes      String 
+
+  status   String    @default("Pending")
   comments Comment[]
 
   createdAt DateTime @default(now())

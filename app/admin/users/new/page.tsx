@@ -44,13 +44,13 @@ export default function CreateUserPage() {
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">FIRST NAME</label>
                         <input type="text" name="firstName" required disabled={isPending}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900 placeholder-slate-400"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900 placeholder-slate-400"
                             placeholder="e.g. John" />
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">LAST NAME</label>
                         <input type="text" name="lastName" required disabled={isPending}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900 placeholder-slate-400"
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900 placeholder-slate-400"
                             placeholder="e.g. Doe" />
                     </div>
                  </div>
@@ -58,7 +58,7 @@ export default function CreateUserPage() {
                  <div className="grid grid-cols-2 gap-4">
                      <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">NETWORK ROLE</label>
-                        <select name="role" required disabled={isPending} className="w-full px-4 py-3 border-r-8 border-transparent bg-slate-50 border-y border-x border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900 cursor-pointer">
+                        <select name="role" required disabled={isPending} className="w-full px-4 py-3 border-r-8 border-transparent bg-slate-50 border-y border-x border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900 cursor-pointer">
                            <option value="employee">Employee</option>
                            <option value="manager">Manager</option>
                            <option value="admin">Admin</option>
@@ -67,14 +67,14 @@ export default function CreateUserPage() {
                      <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">DEPARTMENT</label>
                         <input type="text" name="department" disabled={isPending} placeholder="Operations"
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900 placeholder-slate-400" />
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900 placeholder-slate-400" />
                      </div>
                  </div>
 
                  <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">JOB TITLE</label>
                     <input type="text" name="title" disabled={isPending} placeholder="Funeral Director"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900 placeholder-slate-400" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900 placeholder-slate-400" />
                  </div>
 
                  <div className="pt-6">
@@ -176,7 +176,7 @@ export default function CreateUserPage() {
                  Cancel Generation
                </Link>
                
-               <button type="submit" disabled={isPending} className="bg-[#A7705B] hover:bg-[#8B5A44] disabled:opacity-50 text-white px-8 py-3.5 rounded-full font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2 group w-full sm:w-auto justify-center">
+               <button type="submit" disabled={isPending} className="bg-[#91665b] hover:bg-[#674840] disabled:opacity-50 text-white px-8 py-3.5 rounded-full font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2 group w-full sm:w-auto justify-center">
                  {isPending ? 'Provisioning Profile...' : 'Deploy Secure User'}
                  {!isPending && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
                </button>

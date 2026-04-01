@@ -23,7 +23,7 @@ export function PasswordUpdateForm() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">CURRENT PASSWORD</label>
                 <input type="password" name="currentPassword" required disabled={isPending}
                    autoComplete="new-password" data-lpignore="true"
-                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900"
+                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900"
                    placeholder="Enter current password"
                 />
               </div>
@@ -32,7 +32,7 @@ export function PasswordUpdateForm() {
                 <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">NEW SECURE PASSWORD</label>
                 <input type="password" name="newPassword" required disabled={isPending} minLength={8}
                    autoComplete="new-password" data-lpignore="true"
-                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900"
+                   className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#91665b]/30 focus:border-[#91665b] transition-all font-medium text-slate-900"
                    placeholder="New password (min 8 characters)"
                 />
               </div>

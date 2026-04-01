@@ -58,7 +58,7 @@ export function AdminDocuments() {
            <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">PORTAL <span className="text-slate-300">&gt;</span> DOCUMENT CONTROL</div>
            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Company Documents</h1>
         </div>
-        <button onClick={() => setIsAddModalOpen(true)} className="bg-[#A7705B] hover:bg-[#8B5A44] text-white px-6 py-3.5 flex items-center gap-2 rounded-full font-bold shadow-sm transition-all active:scale-95">
+        <button onClick={() => setIsAddModalOpen(true)} className="bg-[#91665b] hover:bg-[#674840] text-white px-6 py-3.5 flex items-center gap-2 rounded-full font-bold shadow-sm transition-all active:scale-95">
           <PlusCircle className="w-5 h-5" />
           Add New Document
         </button>
@@ -85,7 +85,7 @@ export function AdminDocuments() {
                 <div className="w-10 h-10 rounded-full bg-slate-400 border-2 border-white overflow-hidden shadow-sm flex items-center justify-center">
                     <ArchiveRestore className="w-5 h-5 text-slate-200" />
                 </div>
-                <div className="w-10 h-10 rounded-full bg-[#fceee6] text-[#A7705B] border-2 border-white shadow-sm flex items-center justify-center text-xs font-bold z-10">
+                <div className="w-10 h-10 rounded-full bg-[#fdf5f3] text-[#91665b] border-2 border-white shadow-sm flex items-center justify-center text-xs font-bold z-10">
                    +4
                 </div>
              </div>
@@ -98,14 +98,14 @@ export function AdminDocuments() {
            <div>
               <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">CLOUD USAGE</div>
               <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-4">
-                <div className="bg-[#A7705B] h-3 rounded-full" style={{ width: '62%' }}></div>
+                <div className="bg-[#91665b] h-3 rounded-full" style={{ width: '62%' }}></div>
               </div>
               <p className="text-slate-900 font-black text-xl">
                  6.2 GB <span className="text-slate-400 font-medium text-base">of 10 GB</span>
               </p>
            </div>
            
-           <button className="text-[#A7705B] font-bold mt-6 text-left hover:text-[#8B5A44] transition-colors flex items-center gap-1 group">
+           <button className="text-[#91665b] font-bold mt-6 text-left hover:text-[#674840] transition-colors flex items-center gap-1 group">
              Upgrade Storage <span className="group-hover:translate-x-1 transition-transform">-&gt;</span>
            </button>
         </div>
@@ -117,7 +117,7 @@ export function AdminDocuments() {
             <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Document Registry</h2>
             <div className="relative max-w-md w-full sm:w-80">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search documents..." className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#A7705B]/20 transition-shadow" />
+              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search documents..." className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#91665b]/20 transition-shadow" />
             </div>
          </div>
 
@@ -155,8 +155,8 @@ export function AdminDocuments() {
                        </td>
                        <td className="py-6 pr-4 text-right">
                           <div className="flex items-center justify-end gap-5">
-                             <button onClick={() => handleRemove(doc.id)} className="text-xs font-bold tracking-widest text-[#A7705B]/40 hover:text-red-500 transition-colors">REMOVE</button>
-                             <button onClick={() => handleUpdateClick(doc.id)} className="text-xs font-bold tracking-widest text-[#A7705B] hover:text-[#8B5A44] transition-colors">UPDATE</button>
+                             <button onClick={() => handleRemove(doc.id)} className="text-xs font-bold tracking-widest text-[#91665b]/40 hover:text-red-500 transition-colors">REMOVE</button>
+                             <button onClick={() => handleUpdateClick(doc.id)} className="text-xs font-bold tracking-widest text-[#91665b] hover:text-[#674840] transition-colors">UPDATE</button>
                           </div>
                        </td>
                     </tr>
@@ -174,7 +174,7 @@ export function AdminDocuments() {
                  <X className="w-5 h-5" />
               </button>
               
-              <div className="w-14 h-14 bg-[#fceee6] rounded-2xl flex items-center justify-center mb-6 text-[#A7705B]">
+              <div className="w-14 h-14 bg-[#fdf5f3] rounded-2xl flex items-center justify-center mb-6 text-[#91665b]">
                  <UploadCloud className="w-6 h-6" />
               </div>
               
@@ -183,8 +183,8 @@ export function AdminDocuments() {
                 You are preparing to overwrite <strong>{selectedDoc?.title || "selected file"}</strong>. Upload the new payload below.
               </p>
               
-              <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-[#A7705B] hover:bg-[#A7705B]/5 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#A7705B] group-hover:text-white transition-colors mb-4">
+              <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-[#91665b] hover:bg-[#91665b]/5 transition-all cursor-pointer group">
+                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#91665b] group-hover:text-white transition-colors mb-4">
                      <ImageIcon className="w-5 h-5" />
                   </div>
                   <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">Click to upload file</span>
@@ -195,7 +195,7 @@ export function AdminDocuments() {
                  <button onClick={() => setIsUpdateModalOpen(false)} className="py-3.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
                     Cancel
                  </button>
-                 <button onClick={handleOverwrite} className="py-3.5 rounded-xl font-bold text-white bg-[#A7705B] hover:bg-[#8B5A44] transition-colors shadow-sm active:scale-95">
+                 <button onClick={handleOverwrite} className="py-3.5 rounded-xl font-bold text-white bg-[#91665b] hover:bg-[#674840] transition-colors shadow-sm active:scale-95">
                     Overwrite File
                  </button>
               </div>

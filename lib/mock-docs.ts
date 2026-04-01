@@ -6,7 +6,7 @@ export const FEATURED_DOCS = [
     description: "Revised guidelines for on-site sanctuary maintenance and guest safety for Q4.",
     publishedAt: "PUBLISHED 2 DAYS AGO",
     buttonText: "Open PDF",
-    bgColor: "bg-[#A7705B]",
+    bgColor: "bg-[#91665b]",
     textColor: "text-white",
     tagColor: "bg-white/20 text-white",
     btnColor: "bg-white text-slate-900 hover:bg-slate-50"
@@ -21,7 +21,7 @@ export const FEATURED_DOCS = [
     bgColor: "bg-[#F7F4EF]",
     textColor: "text-slate-900",
     tagColor: "bg-slate-200/60 text-slate-600",
-    btnColor: "bg-[#8B5A44] text-white hover:bg-[#7a4c38]"
+    btnColor: "bg-[#674840] text-white hover:bg-[#674840]"
   },
   {
     id: "f3",

@@ -5,38 +5,38 @@
   --color-slate-50: #f3f2ed;
   --color-slate-100: #e8e6df;
   --color-slate-200: #dcd9cf;
-  --color-slate-300: #c5c1b4;
-  --color-slate-400: #9ba0a5;
-  --color-slate-500: #6e7c84;
-  --color-slate-600: #59656e;
-  --color-slate-700: #49535a;
-  --color-slate-800: #3b4349;
-  --color-slate-900: #2d3439;
+  --color-slate-300: #d1cfc8;
+  --color-slate-400: #b4bdc2;
+  --color-slate-500: #929ba1;
+  --color-slate-600: #748085;
+  --color-slate-700: #727b82;
+  --color-slate-800: #303335;
+  --color-slate-900: #1f2223;
   --color-slate-950: #1e2428;
 
   /* Brand Scale - Using User's Peach (#e3c3b0) and Terracotta (#d87c61) */
   --color-brand-50: #fdf5f3;
   --color-brand-100: #fbe8e4;
-  --color-brand-200: #e3c3b0;
-  --color-brand-300: #eeaf97;
-  --color-brand-400: #e6957a;
-  --color-brand-500: #d87c61;
-  --color-brand-600: #ca694d;
-  --color-brand-700: #a34b35;
-  --color-brand-800: #873e2d;
-  --color-brand-900: #713629;
-  --color-brand-950: #3d1912;
+  --color-brand-200: #dac6b4;
+  --color-brand-300: #c5a79c;
+  --color-brand-400: #c0836b;
+  --color-brand-500: #c0836b;
+  --color-brand-600: #c9714e;
+  --color-brand-700: #91665b;
+  --color-brand-800: #91665b;
+  --color-brand-900: #674840;
+  --color-brand-950: #242728;
 
-  --color-accent-100: #e8ecf2;
-  --color-accent-200: #c5d0de;
-  --color-accent-500: #4a6b8c;
-  --color-accent-600: #2d4661;
-  --color-accent-700: #1e3a5f;
+  --color-accent-100: #e4ecee;
+  --color-accent-200: #b8cdd2;
+  --color-accent-500: #3d6068;
+  --color-accent-600: #2b3c41;
+  --color-accent-700: #1e2c30;
 
-  --color-status-pending: #f59e0b;
-  --color-status-revision: #f97316;
-  --color-status-finalized: #10b981;
-  --color-status-approved: #0d9488;
+  --color-status-pending: #E5A877;
+  --color-status-revision: #E5A877;
+  --color-status-finalized: #2f9aad;
+  --color-status-approved: #0d7f94;
 }
 
 /* 

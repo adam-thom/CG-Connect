@@ -25,7 +25,7 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-        <Link href="/admin/users" className="group bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-[#A7705B]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[220px]">
+        <Link href="/admin/users" className="group bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-[#91665b]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[220px]">
            <div>
               <div className="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                  <Users className="w-7 h-7" />
@@ -34,12 +34,12 @@ export default function AdminDashboardPage() {
               <p className="text-slate-500 line-clamp-2 leading-relaxed">Instantly manage all registered employee and manager accounts, mapping their physical locations via Routing Tags natively.</p>
            </div>
            
-           <div className="flex items-center text-[#A7705B] font-bold mt-8 pt-4 border-t border-slate-100">
+           <div className="flex items-center text-[#91665b] font-bold mt-8 pt-4 border-t border-slate-100">
               Access Directory <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
            </div>
         </Link>
         
-        <Link href="/admin/docs" className="group bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-[#A7705B]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[220px]">
+        <Link href="/admin/docs" className="group bg-white rounded-3xl p-8 border border-slate-200 shadow-sm hover:border-[#91665b]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[220px]">
            <div>
               <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                  <FolderOpen className="w-7 h-7" />
@@ -48,7 +48,7 @@ export default function AdminDashboardPage() {
               <p className="text-slate-500 line-clamp-2 leading-relaxed">Securely upload updated PDFs and Handbooks into the global registry, dynamically synchronizing out to standard employee portals.</p>
            </div>
 
-           <div className="flex items-center text-[#A7705B] font-bold mt-8 pt-4 border-t border-slate-100">
+           <div className="flex items-center text-[#91665b] font-bold mt-8 pt-4 border-t border-slate-100">
               Manage Documents <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
            </div>
         </Link>
