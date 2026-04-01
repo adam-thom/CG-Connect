@@ -5,7 +5,7 @@ import { jwtVerify } from 'jose';
 const secretKey = process.env.SESSION_SECRET || 'super-secret-key-for-cg-connect-dev-only-change-me';
 const encodedKey = new TextEncoder().encode(secretKey);
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
   
   // Exclude static assets, core routing loops, and login

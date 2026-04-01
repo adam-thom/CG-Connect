@@ -12,20 +12,33 @@ export default async function AdminCapExDashboard() {
     redirect('/login');
   }
 
-  // Fetch all managers securely to map administrative assignments globally
+  // Fetch managers with their budget field explicitly selected
   const managers = await prisma.user.findMany({
     where: { role: 'manager' },
-    include: {
-        capExRequests: {
-            where: { status: 'Approved' }
-        }
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      quarterlyCapExBudget: true,
     }
   });
 
-  // Global assignment matrix mapping
+  // Fetch all approved CapEx requests to calculate spent amounts per manager
+  const approvedRequests = await prisma.capExRequest.findMany({
+    where: { status: 'Approved' },
+    select: { submitterId: true, amount: true },
+  });
+
+  // Build a map of submitterId -> total spent
+  const spentByManager: Record<string, number> = {};
+  for (const req of approvedRequests) {
+    spentByManager[req.submitterId] = (spentByManager[req.submitterId] || 0) + req.amount;
+  }
+
+  // Global queue — all requests for admin review
   const allRequests = await prisma.capExRequest.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { submitter: true }
+    include: { submitter: true },
   });
 
   const statusColors: any = {
@@ -51,7 +64,7 @@ export default async function AdminCapExDashboard() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {managers.map(mgr => {
-                  const spent = mgr.capExRequests.reduce((sum, req) => sum + req.amount, 0);
+                  const spent = spentByManager[mgr.id] ?? 0;
                   return <ManagerBudgetCard key={mgr.id} manager={mgr} spent={spent} />;
               })}
               {managers.length === 0 && (

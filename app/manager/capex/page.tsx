@@ -8,22 +8,34 @@ import { FileText, Clock, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default async function ManagerCapExDashboard() {
-  const user = await getSessionUser();
-  if (!user || user.role !== 'manager') {
+  const session = await getSessionUser();
+  if (!session || session.role !== 'manager') {
     redirect('/login');
   }
 
-  // Calculate consumed budget natively
-  const approvedRequests = await prisma.capExRequest.findMany({
-    where: { submitterId: user.id, status: 'Approved' }
+  // Fetch fresh user record with budget field — getSessionUser only includes `tags`
+  const user = await prisma.user.findUnique({
+    where: { id: session.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      quarterlyCapExBudget: true,
+    }
   });
-  
-  const spent = approvedRequests.reduce((sum, req) => sum + req.amount, 0);
-  const budget = user.quarterlyCapExBudget || 0;
+
+  const budget = user?.quarterlyCapExBudget ?? 0;
+
+  // Approved requests sum
+  const approvedRequests = await prisma.capExRequest.findMany({
+    where: { submitterId: session.id, status: 'Approved' },
+    select: { amount: true },
+  });
+  const spent = approvedRequests.reduce((sum: number, req: { amount: number }) => sum + req.amount, 0);
 
   const allRequests = await prisma.capExRequest.findMany({
-    where: { submitterId: user.id },
-    orderBy: { createdAt: 'desc' }
+    where: { submitterId: session.id },
+    orderBy: { createdAt: 'desc' },
   });
 
   const statusColors: any = {
@@ -40,7 +52,7 @@ export default async function ManagerCapExDashboard() {
         <p className="text-slate-500 font-medium text-lg">Manage your quarterly assignments and allocate infrastructural spending.</p>
       </div>
 
-      <CapExProgressBar budget={budget} spent={spent} userName={user.name || ''} />
+      <CapExProgressBar budget={budget} spent={spent} userName={session.name || ''} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">

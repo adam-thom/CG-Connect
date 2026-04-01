@@ -16,7 +16,9 @@ export function CapExForm({ existingData }: { existingData?: any }) {
     e.preventDefault();
     setError('');
 
-    const formData = new FormData(e.currentTarget);
+    // Capture the form element NOW — e.currentTarget becomes null after the async transition
+    const formEl = e.currentTarget;
+    const formData = new FormData(formEl);
     const file1 = formData.get('quote1') as File;
     const file2 = formData.get('quote2') as File;
 
@@ -36,9 +38,9 @@ export function CapExForm({ existingData }: { existingData?: any }) {
       if (result?.error) {
         setError(result.error);
       } else {
-        router.refresh(); // Refresh the active list
+        router.refresh();
         if (!isEditing) {
-            e.currentTarget.reset();
+            formEl.reset();
         }
       }
     });
