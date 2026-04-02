@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { CheckSquare, Activity, Users, FolderOpen, ArrowRight, Loader2 } from "lucide-react";
+import { CheckSquare, Activity, Users, FolderOpen, ArrowRight, Loader2, CloudSnow } from "lucide-react";
 import Link from "next/link";
 import { fetchManagerQueue } from "@/app/actions/submissions";
 import { useState, useEffect } from "react";
@@ -48,20 +48,7 @@ export default function ManagerDashboard() {
           </div>
         </Link>
 
-        <Link href="/manager/schedule" className="bg-brand-900 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between min-h-[160px] text-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-brand-800 rounded-bl-full -mr-8 -mt-8 pointer-events-none"></div>
-          <div className="relative z-10 flex items-start justify-between mb-4">
-            <div className="w-12 h-12 bg-white/20 text-white rounded-2xl flex items-center justify-center -ml-1">
-              <Activity className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="relative z-10">
-            <p className="text-3xl font-bold mb-1 tracking-tight text-white">4</p>
-            <p className="text-sm font-medium text-brand-200 flex items-center gap-1">
-              Active Transfers <ArrowRight className="w-4 h-4 text-brand-300 opacity-0 group-hover:opacity-100 -ml-2 group-hover:ml-0 transition-all" />
-            </p>
-          </div>
-        </Link>
+
         
         <Link href="/manager/submissions" className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-brand-400 hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between min-h-[160px]">
           <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-full -mr-8 -mt-8 pointer-events-none transition-colors group-hover:bg-rose-100"></div>
@@ -78,35 +65,7 @@ export default function ManagerDashboard() {
           </div>
         </Link>
 
-        <Link href="/manager/staff" className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-brand-400 hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between min-h-[160px]">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-8 -mt-8 pointer-events-none transition-colors group-hover:bg-indigo-100"></div>
-          <div className="relative z-10 flex items-start justify-between mb-4">
-            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center -ml-1">
-              <Users className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="relative z-10">
-            <p className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">42</p>
-            <p className="text-sm font-semibold text-slate-500 flex items-center gap-1">
-              Staff Assignments <ArrowRight className="w-4 h-4 text-brand-500 opacity-0 group-hover:opacity-100 -ml-2 group-hover:ml-0 transition-all" />
-            </p>
-          </div>
-        </Link>
-        
-        <Link href="/manager/documents" className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-brand-400 hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between min-h-[160px]">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-accent-50 rounded-bl-full -mr-8 -mt-8 pointer-events-none transition-colors group-hover:bg-accent-100"></div>
-          <div className="relative z-10 flex items-start justify-between mb-4">
-            <div className="w-12 h-12 bg-accent-100 text-accent-700 rounded-2xl flex items-center justify-center -ml-1">
-              <FolderOpen className="w-6 h-6" />
-            </div>
-          </div>
-          <div className="relative z-10">
-            <p className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">1,284</p>
-            <p className="text-sm font-semibold text-slate-500 flex items-center gap-1">
-              Managed Docs <ArrowRight className="w-4 h-4 text-brand-500 opacity-0 group-hover:opacity-100 -ml-2 group-hover:ml-0 transition-all" />
-            </p>
-          </div>
-        </Link>
+
 
         <Link href="/manager/capex" className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-brand-400 hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between min-h-[160px]">
           <div className="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-bl-full -mr-8 -mt-8 pointer-events-none transition-colors group-hover:bg-teal-100"></div>
@@ -119,6 +78,21 @@ export default function ManagerDashboard() {
             <p className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">CapEx</p>
             <p className="text-sm font-semibold text-slate-500 flex items-center gap-1">
               Capital Expenditures <ArrowRight className="w-4 h-4 text-brand-500 opacity-0 group-hover:opacity-100 -ml-2 group-hover:ml-0 transition-all" />
+            </p>
+          </div>
+        </Link>
+
+        <Link href="/employee/submissions/new/snow-log" className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm hover:border-brand-400 hover:shadow-md transition-all group relative overflow-hidden flex flex-col justify-between min-h-[160px]">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-sky-50 rounded-bl-full -mr-8 -mt-8 pointer-events-none transition-colors group-hover:bg-sky-100"></div>
+          <div className="relative z-10 flex items-start justify-between mb-4">
+            <div className="w-12 h-12 bg-sky-100 text-sky-600 rounded-2xl flex items-center justify-center -ml-1">
+              <CloudSnow className="w-6 h-6" />
+            </div>
+          </div>
+          <div className="relative z-10">
+            <p className="text-xl md:text-2xl lg:text-3xl font-bold text-slate-900 mb-1 tracking-tight truncate px-1">Snow Log</p>
+            <p className="text-sm font-semibold text-slate-500 flex items-center gap-1">
+              File New Removal Log <ArrowRight className="w-4 h-4 text-brand-500 opacity-0 group-hover:opacity-100 -ml-2 group-hover:ml-0 transition-all shrink-0" />
             </p>
           </div>
         </Link>

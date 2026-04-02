@@ -30,6 +30,7 @@ model User {
   incidentReports IncidentReport[] @relation("IncidentSubmitter")
   timeOffRequests TimeOffRequest[] @relation("TimeOffSubmitter")
   fundingRequests FundingRequest[] @relation("FundingSubmitter")
+  snowRemovalLogs SnowRemovalLog[] @relation("SnowLogSubmitter")
 
   // Authored interactions
   comments     Comment[]  @relation("CommentAuthor")
@@ -54,6 +55,7 @@ model Tag {
   assignedIncidentReports IncidentReport[] @relation("IncidentTagApprovers")
   assignedTimeOff         TimeOffRequest[] @relation("TimeOffTagApprovers")
   assignedFunding         FundingRequest[] @relation("FundingTagApprovers")
+  assignedSnowLogs        SnowRemovalLog[] @relation("SnowLogTagApprovers")
 
   visibleDocuments Document[] @relation("DocumentVisibilityTags")
 }
@@ -114,6 +116,9 @@ model Comment {
 
   capExRequestId String?
   capExRequest   CapExRequest? @relation(fields: [capExRequestId], references: [id])
+
+  snowRemovalLogId String?
+  snowRemovalLog   SnowRemovalLog? @relation(fields: [snowRemovalLogId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -275,4 +280,26 @@ model LocationBudget {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model SnowRemovalLog {
+  id          String   @id @default(cuid())
+  submitterId String
+  submitter   User     @relation("SnowLogSubmitter", fields: [submitterId], references: [id])
+
+  assignedTags Tag[]   @relation("SnowLogTagApprovers")
+
+  date                DateTime?
+  snowRemovalRequired String? // "Yes" or null
+  iceSalt             String? // Checkbox "on"
+  manualShoveling     String? // Checkbox "on"
+  contractedPlow      String? // Checkbox "on"
+  iceBreaking         String? // Checkbox "on"
+  notes               String?
+
+  status   String    @default("PENDING")
+  comments Comment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

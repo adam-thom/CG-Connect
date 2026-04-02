@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { MOCK_SCHEDULE_ENTRIES, MOCK_USERS, ScheduleRole } from "@/lib/mock-data";
-import { ChevronLeft, ChevronRight, Phone, Truck, Flame, Plus, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, Truck, Flame, Plus, Mail, Shield, Droplet } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Modal } from "@/components/Modal";
@@ -13,6 +13,49 @@ export default function ManagerSchedule() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [approvedTimeOffs, setApprovedTimeOffs] = useState<any[]>([]);
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [scheduleEntries, setScheduleEntries] = useState<any[]>([]);
+  const [tempAssignments, setTempAssignments] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+       const stored = localStorage.getItem("CG_CONNECT_SCHEDULE");
+       if (stored) setScheduleEntries(JSON.parse(stored));
+       else {
+           localStorage.setItem("CG_CONNECT_SCHEDULE", JSON.stringify(MOCK_SCHEDULE_ENTRIES));
+           setScheduleEntries(MOCK_SCHEDULE_ENTRIES);
+       }
+    }
+  }, []);
+
+  useEffect(() => {
+     if (isModalOpen && selectedDate) {
+         const initial: Record<string, string> = {};
+         REQUIRED_ROLES.forEach(role => {
+            const existing = scheduleEntries.find(e => e.date === selectedDate && e.roleType === role);
+            if (existing) initial[role] = existing.userId;
+         });
+         setTempAssignments(initial);
+     }
+  }, [isModalOpen, selectedDate, scheduleEntries]);
+
+  const handleConfirmAssignments = () => {
+      if (!selectedDate) return;
+      const newEntries = scheduleEntries.filter(e => e.date !== selectedDate);
+      Object.entries(tempAssignments).forEach(([role, userId]) => {
+          if (userId) {
+              newEntries.push({
+                  id: `SCH-${Date.now()}-${Math.random()}`,
+                  date: selectedDate,
+                  userId,
+                  roleType: role as ScheduleRole
+              });
+          }
+      });
+      setScheduleEntries(newEntries);
+      localStorage.setItem("CG_CONNECT_SCHEDULE", JSON.stringify(newEntries));
+      setIsModalOpen(false);
+  };
 
   useEffect(() => {
     fetchAllApprovedTimeOffs().then(setApprovedTimeOffs);
@@ -20,9 +63,19 @@ export default function ManagerSchedule() {
 
   if (!user) return null;
 
-  const daysInMonth = 31;
-  const startDay = 4; // Thu (Oct 1 2026 is a Thursday)
-  const currentMonthDateString = "2026-10-";
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const currentMonthDateString = `${year}-${String(month + 1).padStart(2, '0')}-`;
+  const monthName = currentDate.toLocaleString('default', { month: 'long' });
+
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const handleToday = () => setCurrentDate(new Date());
+
+  const todayDate = new Date();
+  const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
 
   const REQUIRED_ROLES: ScheduleRole[] = [
     "Lead Director - MB",
@@ -33,13 +86,16 @@ export default function ManagerSchedule() {
     "TRANSFERS - SECOND",
     "TRANSFERS - BACK UP",
     "CREMATIONS",
+    "PREPS",
     "ME RUN"
   ];
 
   const getRoleIcon = (roleType: string) => {
     if (roleType.includes("Lead Director")) return <Phone className="w-3.5 h-3.5 text-brand-700" />;
+    if (roleType === "TRANSFERS - BACK UP") return <Shield className="w-3.5 h-3.5 text-slate-500" />;
     if (roleType.includes("TRANSFERS") || roleType.includes("ME RUN")) return <Truck className="w-3.5 h-3.5 text-slate-600" />;
     if (roleType === "CREMATIONS") return <Flame className="w-3.5 h-3.5 text-orange-600" />;
+    if (roleType === "PREPS") return <Droplet className="w-3.5 h-3.5 text-blue-500" />;
     return null;
   };
 
@@ -87,13 +143,13 @@ export default function ManagerSchedule() {
             <Mail className="w-4 h-4" />
             Send Schedule
           </button>
-          <button className="p-2 border border-slate-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 text-slate-700 font-medium text-sm">
+          <button onClick={handleToday} className="p-2 border border-slate-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 text-slate-700 font-medium text-sm">
             Today
           </button>
           <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <button className="p-2 hover:bg-slate-50 text-slate-500 border-r border-slate-200"><ChevronLeft className="w-4 h-4" /></button>
-            <span className="px-4 py-1.5 font-semibold text-brand-900 min-w-36 text-center">October 2026</span>
-            <button className="p-2 hover:bg-slate-50 text-slate-500 border-l border-slate-200"><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 text-slate-500 border-r border-slate-200"><ChevronLeft className="w-4 h-4" /></button>
+            <span className="px-4 py-1.5 font-semibold text-brand-900 min-w-36 text-center">{monthName} {year}</span>
+            <button onClick={handleNextMonth} className="p-2 hover:bg-slate-50 text-slate-500 border-l border-slate-200"><ChevronRight className="w-4 h-4" /></button>
           </div>
         </div>
       </div>
@@ -118,13 +174,13 @@ export default function ManagerSchedule() {
                const weekEndStr = activeDays[activeDays.length - 1]?.dateStr;
 
                return (
-                 <div key={wIdx} className="grid grid-cols-7 relative auto-rows-[140px] border-b border-slate-200 last:border-b-0 group">
+                 <div key={wIdx} className="grid grid-cols-7 relative auto-rows-[minmax(160px,auto)] border-b border-slate-200 last:border-b-0 group">
                     {/* Background cells & standard schedule entries */}
                     {week.map((day, dIdx) => {
                       if (!day) return <div key={dIdx} className="border-r border-slate-100 bg-slate-50/30 p-2 opacity-50"></div>;
                       
-                      const isToday = day.dateStr === "2026-10-02";
-                      const dayEntries = MOCK_SCHEDULE_ENTRIES.filter(e => e.date === day.dateStr);
+                      const isToday = day.dateStr === todayStr;
+                      const dayEntries = scheduleEntries.filter(e => e.date === day.dateStr);
 
                       return (
                         <div 
@@ -211,6 +267,45 @@ export default function ManagerSchedule() {
         </div>
 
         <div className="w-full xl:w-80 space-y-6 shrink-0 z-0">
+          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
+            <h3 className="font-semibold text-brand-900 mb-4 flex items-center gap-2 pb-3 border-b border-slate-100">
+              <CalendarIcon className="w-5 h-5 text-brand-500" />
+              Legend & Key
+            </h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-7 h-7 rounded bg-brand-50 border border-brand-200 flex items-center justify-center">
+                  <Phone className="w-4 h-4 text-brand-700" />
+                </div>
+                Lead Director / On-Call
+              </li>
+              <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-7 h-7 rounded bg-slate-50 border border-slate-200 flex items-center justify-center">
+                  <Truck className="w-4 h-4 text-slate-600" />
+                </div>
+                Transfer Specialist
+              </li>
+              <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-7 h-7 rounded bg-slate-100 border border-slate-300 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-slate-500" />
+                </div>
+                Backup Transfer
+              </li>
+              <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-7 h-7 rounded bg-orange-50 border border-orange-200 flex items-center justify-center">
+                  <Flame className="w-4 h-4 text-orange-600" />
+                </div>
+                Cremations
+              </li>
+              <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-7 h-7 rounded bg-blue-50 border border-blue-200 flex items-center justify-center">
+                  <Droplet className="w-4 h-4 text-blue-500" />
+                </div>
+                Preparations
+              </li>
+            </ul>
+          </div>
+
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-4 -mt-4"></div>
             <h3 className="font-bold text-red-900 mb-2 relative z-10">Upcoming Vacancies</h3>
@@ -220,7 +315,7 @@ export default function ManagerSchedule() {
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
             <h3 className="font-semibold text-brand-900 mb-4 pb-3 border-b border-slate-100">Today's Active Team</h3>
             <ul className="space-y-4">
-              {MOCK_SCHEDULE_ENTRIES.filter(e => e.date === "2026-10-02").map(entry => {
+              {scheduleEntries.filter(e => e.date === todayStr).map(entry => {
                 const u = MOCK_USERS.find(u => u.id === entry.userId);
                 return (
                   <li key={entry.id} className="flex items-center gap-3">
@@ -245,9 +340,6 @@ export default function ManagerSchedule() {
           
           <div className="space-y-3 overflow-y-auto pr-2 pb-2 flex-1 scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
             {REQUIRED_ROLES.map(role => {
-              // Map mock assignments to slots
-              const existingEntry = selectedDate ? MOCK_SCHEDULE_ENTRIES.find(e => e.date === selectedDate && e.roleType === role) : undefined;
-
               // Filter users who are OFF on this date (Real DB integration)
               const availableUsers = MOCK_USERS.filter(u => {
                 if (!selectedDate) return true;
@@ -266,7 +358,8 @@ export default function ManagerSchedule() {
                     <label className="text-xs font-bold text-slate-800 tracking-wider uppercase">{role}</label>
                   </div>
                   <select 
-                    defaultValue={existingEntry?.userId || ""}
+                    value={tempAssignments[role] || ""}
+                    onChange={(e) => setTempAssignments(prev => ({...prev, [role]: e.target.value}))}
                     className="w-full border border-slate-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 font-medium text-slate-700 text-sm shadow-sm transition-all"
                   >
                     <option value="">-- Click to assign staff --</option>
@@ -283,7 +376,7 @@ export default function ManagerSchedule() {
             <button onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
               Cancel
             </button>
-            <button onClick={() => setIsModalOpen(false)} className="bg-brand-900 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-800 transition-colors shadow-sm">
+            <button onClick={handleConfirmAssignments} className="bg-brand-900 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-800 transition-colors shadow-sm">
               Confirm Assignments
             </button>
           </div>

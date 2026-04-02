@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { MOCK_SCHEDULE_ENTRIES } from "@/lib/mock-data";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, Truck, Flame } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Phone, Truck, Flame, Shield, Droplet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fetchAllApprovedTimeOffs } from "@/app/actions/submissions";
 import { useState, useEffect } from "react";
@@ -10,6 +10,19 @@ import { useState, useEffect } from "react";
 export default function EmployeeSchedule() {
   const { user } = useAuth();
   const [approvedTimeOffs, setApprovedTimeOffs] = useState<any[]>([]);
+  const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
+  const [scheduleEntries, setScheduleEntries] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+       const stored = localStorage.getItem("CG_CONNECT_SCHEDULE");
+       if (stored) setScheduleEntries(JSON.parse(stored));
+       else {
+           localStorage.setItem("CG_CONNECT_SCHEDULE", JSON.stringify(MOCK_SCHEDULE_ENTRIES));
+           setScheduleEntries(MOCK_SCHEDULE_ENTRIES);
+       }
+    }
+  }, []);
 
   useEffect(() => {
     fetchAllApprovedTimeOffs().then(setApprovedTimeOffs);
@@ -17,18 +30,27 @@ export default function EmployeeSchedule() {
   
   if (!user) return null;
 
-  // Mocking October 2026 starting on Thursday (4)
-  const daysInMonth = 31;
-  const startDay = 4; // 0=Sun, 1=Mon, ..., 4=Thu
-  const currentMonthDateString = "2026-10-"; 
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const currentMonthDateString = `${year}-${String(month + 1).padStart(2, '0')}-`;
+  const monthName = currentDate.toLocaleString('default', { month: 'long' });
+
+  const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const handleToday = () => setCurrentDate(new Date());
+
+  const todayDate = new Date();
+  const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
   
   const getRoleIcon = (roleType: string) => {
-    switch (roleType) {
-      case 'lead': return <Phone className="w-3.5 h-3.5 text-brand-700" />;
-      case 'transfer': return <Truck className="w-3.5 h-3.5 text-slate-600" />;
-      case 'cremation': return <Flame className="w-3.5 h-3.5 text-orange-600" />;
-      default: return null;
-    }
+    if (roleType.includes("Lead Director")) return <Phone className="w-3.5 h-3.5 text-brand-700" />;
+    if (roleType === "TRANSFERS - BACK UP") return <Shield className="w-3.5 h-3.5 text-slate-500" />;
+    if (roleType.includes("TRANSFERS") || roleType.includes("ME RUN")) return <Truck className="w-3.5 h-3.5 text-slate-600" />;
+    if (roleType === "CREMATIONS") return <Flame className="w-3.5 h-3.5 text-orange-600" />;
+    if (roleType === "PREPS") return <Droplet className="w-3.5 h-3.5 text-blue-500" />;
+    return null;
   };
 
   // Build Weeks Array for Calendar Grid
@@ -59,15 +81,15 @@ export default function EmployeeSchedule() {
         </div>
         
         <div className="flex items-center gap-4">
-          <button className="p-2 border border-slate-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 text-slate-700 font-medium text-sm flex items-center gap-2">
+          <button onClick={handleToday} className="p-2 border border-slate-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 text-slate-700 font-medium text-sm flex items-center gap-2">
             Today
           </button>
           <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <button className="p-2 hover:bg-slate-50 text-slate-500 border-r border-slate-200">
+            <button onClick={handlePrevMonth} className="p-2 hover:bg-slate-50 text-slate-500 border-r border-slate-200">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-4 py-1.5 font-semibold text-brand-900 min-w-36 text-center">October 2026</span>
-            <button className="p-2 hover:bg-slate-50 text-slate-500 border-l border-slate-200">
+            <span className="px-4 py-1.5 font-semibold text-brand-900 min-w-36 text-center">{monthName} {year}</span>
+            <button onClick={handleNextMonth} className="p-2 hover:bg-slate-50 text-slate-500 border-l border-slate-200">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -94,13 +116,13 @@ export default function EmployeeSchedule() {
                const weekEndStr = activeDays[activeDays.length - 1]?.dateStr;
 
                return (
-                 <div key={wIdx} className="grid grid-cols-7 relative auto-rows-[120px] border-b border-slate-200 last:border-b-0 group">
+                 <div key={wIdx} className="grid grid-cols-7 relative auto-rows-[minmax(140px,auto)] border-b border-slate-200 last:border-b-0 group">
                     {/* Background cells & standard schedule entries */}
                     {week.map((day, dIdx) => {
                       if (!day) return <div key={dIdx} className="border-r border-slate-100 bg-slate-50/30 p-2 opacity-50"></div>;
                       
-                      const isToday = day.dateStr === "2026-10-02";
-                      const dayEntries = MOCK_SCHEDULE_ENTRIES.filter(e => e.date === day.dateStr);
+                      const isToday = day.dateStr === todayStr;
+                      const dayEntries = scheduleEntries.filter(e => e.date === day.dateStr);
                       const isMyShift = dayEntries.some(e => e.userId === user.id);
 
                       return (
@@ -119,7 +141,7 @@ export default function EmployeeSchedule() {
                             {day.dayNum}
                           </span>
                           
-                          <div className="space-y-1.5 overflow-y-auto max-h-[80px] scrollbar-hide z-20 relative mt-3">
+                          <div className="space-y-1.5 overflow-y-visible z-20 relative mt-3">
                             {dayEntries.map(entry => {
                               const isMe = entry.userId === user.id;
                               return (
@@ -211,10 +233,22 @@ export default function EmployeeSchedule() {
                 Transfer Specialist
               </li>
               <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-7 h-7 rounded bg-slate-100 border border-slate-300 flex items-center justify-center">
+                  <Shield className="w-4 h-4 text-slate-500" />
+                </div>
+                Backup Transfer
+              </li>
+              <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
                 <div className="w-7 h-7 rounded bg-orange-50 border border-orange-200 flex items-center justify-center">
                   <Flame className="w-4 h-4 text-orange-600" />
                 </div>
-                Cremation / Prep
+                Cremations
+              </li>
+              <li className="flex items-center gap-3 text-sm text-slate-700 font-medium">
+                <div className="w-7 h-7 rounded bg-blue-50 border border-blue-200 flex items-center justify-center">
+                  <Droplet className="w-4 h-4 text-blue-500" />
+                </div>
+                Preparations
               </li>
             </ul>
           </div>

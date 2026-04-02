@@ -30,8 +30,13 @@ export async function proxy(req: NextRequest) {
     // If you are trying to view employee files:
     if (path.startsWith('/employee')) {
       if (role !== 'employee' && role !== 'admin') {
-        // Managers get bounced safely to their manager dashboard
-        return NextResponse.redirect(new URL('/manager/dashboard', req.url));
+        // Exception: Managers are allowed to create new submissions, which are hosted under the employee route namespace.
+        if (role === 'manager' && path.startsWith('/employee/submissions/new')) {
+          // Allow access
+        } else {
+          // Managers get bounced safely to their manager dashboard
+          return NextResponse.redirect(new URL('/manager/dashboard', req.url));
+        }
       }
     }
 

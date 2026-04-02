@@ -24,18 +24,29 @@ export async function submitFormAction(formType: string, prevState: any, formDat
   // 1. Determine the logical Target Manager tags based on the Employee's tags
   const targetTagNames = new Set<string>();
   
-  // Base routing derived from Employee tags
-  const userTagNames = user.tags.map(t => t.name);
-  if (userTagNames.includes('MB Employee')) targetTagNames.add('MB Manager');
-  if (userTagNames.includes('CSG Employee')) targetTagNames.add('CSG Manager');
-  if (userTagNames.includes('EVG Employee')) targetTagNames.add('EVG Manager');
-  if (userTagNames.includes('EDENS Employee')) targetTagNames.add('EDENS Manager');
+  // Base routing derived from selected form Location, or fallback to Employee tags
+  const location = formData.get('location') as string;
+  if (location === 'MB') targetTagNames.add('MB Manager');
+  if (location === 'CSG') targetTagNames.add('CSG Manager');
+  if (location === 'EVG') targetTagNames.add('EVG Manager');
+  if (location === 'EDENS') targetTagNames.add('EDENS Manager');
+
+  if (!location) {
+    const userTagNames = user.tags.map(t => t.name);
+    if (userTagNames.includes('MB Employee')) targetTagNames.add('MB Manager');
+    if (userTagNames.includes('CSG Employee')) targetTagNames.add('CSG Manager');
+    if (userTagNames.includes('EVG Employee')) targetTagNames.add('EVG Manager');
+    if (userTagNames.includes('EDENS Employee')) targetTagNames.add('EDENS Manager');
+  }
 
   // Specific Form Type Additions (Overlaying Routing logic globally)
   if (formType === 'transfer') {
     targetTagNames.add('TRANSFER Manager');
   }
   if (formType === 'incident') {
+    targetTagNames.add('OHS Manager');
+  }
+  if (formType === 'snow-log') {
     targetTagNames.add('OHS Manager');
   }
 
@@ -135,6 +146,21 @@ export async function submitFormAction(formType: string, prevState: any, formDat
           status: user.role === 'manager' || user.role === 'admin' ? 'APPROVED' : 'PENDING'
         }
       });
+    } else if (formType === 'snow-log') {
+      await prisma.snowRemovalLog.create({
+        data: {
+          submitterId: user.id,
+          assignedTags: { connect: assignedTagsConnect },
+          date: formData.get('date') ? new Date(formData.get('date') as string) : null,
+          snowRemovalRequired: formData.get('snowRemovalRequired') as string || null,
+          iceSalt: formData.get('iceSalt') as string || null,
+          manualShoveling: formData.get('manualShoveling') as string || null,
+          contractedPlow: formData.get('contractedPlow') as string || null,
+          iceBreaking: formData.get('iceBreaking') as string || null,
+          notes: formData.get('notes') as string || null,
+          status: 'PENDING'
+        }
+      });
     }
   } catch (error) {
     console.error('Submission Error:', error);
@@ -157,18 +183,20 @@ export async function fetchMySubmissions() {
   if (!user) return [];
 
   // Parallel fetch across all schemas
-  const [timesheets, transfers, incidents, timeOffs] = await Promise.all([
+  const [timesheets, transfers, incidents, timeOffs, snowLogs] = await Promise.all([
     prisma.timesheet.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } }),
     prisma.transferRecord.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } }),
     prisma.incidentReport.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } }),
-    prisma.timeOffRequest.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } })
+    prisma.timeOffRequest.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } }),
+    prisma.snowRemovalLog.findMany({ where: { submitterId: user.id }, orderBy: { createdAt: 'desc' } })
   ]);
 
   const unified = [
     ...timesheets.map(t => ({ id: t.id, type: 'timesheet', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
     ...transfers.map(t => ({ id: t.id, type: 'transfer', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
     ...incidents.map(t => ({ id: t.id, type: 'incident', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
-    ...timeOffs.map(t => ({ id: t.id, type: 'time-off', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
+    ...timeOffs.map(t => ({ id: t.id, type: 'time-off', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...snowLogs.map(t => ({ id: t.id, type: 'snow-log', status: toAppStatus(t.status), submitterId: t.submitterId, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
   ];
 
   return unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -183,24 +211,34 @@ export async function fetchManagerQueue() {
   // We find Submissions that are connected to ANY of the manager's tags.
   // Prisma relation filtering: assignedTags: { some: { name: { in: managerTagNames } } }
   
-  const [timesheets, transfers, incidents, timeOffs] = await Promise.all([
+  const isDevAccount = user.email === 'dev@caringroup.com';
+  const assignedTagsQuery = isDevAccount 
+    ? {} 
+    : { assignedTags: { some: { name: { in: managerTagNames } } } };
+
+  const [timesheets, transfers, incidents, timeOffs, snowLogs] = await Promise.all([
     prisma.timesheet.findMany({
-      where: { assignedTags: { some: { name: { in: managerTagNames } } } },
+      where: assignedTagsQuery,
       include: { submitter: { select: { name: true, email: true } } },
       orderBy: { createdAt: 'desc' }
     }),
     prisma.transferRecord.findMany({
-      where: { assignedTags: { some: { name: { in: managerTagNames } } } },
+      where: assignedTagsQuery,
       include: { submitter: { select: { name: true, email: true } } },
       orderBy: { createdAt: 'desc' }
     }),
     prisma.incidentReport.findMany({
-      where: { assignedTags: { some: { name: { in: managerTagNames } } } },
+      where: assignedTagsQuery,
       include: { submitter: { select: { name: true, email: true } } },
       orderBy: { createdAt: 'desc' }
     }),
     prisma.timeOffRequest.findMany({
-      where: { assignedTags: { some: { name: { in: managerTagNames } } } },
+      where: assignedTagsQuery,
+      include: { submitter: { select: { name: true, email: true } } },
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.snowRemovalLog.findMany({
+      where: assignedTagsQuery,
       include: { submitter: { select: { name: true, email: true } } },
       orderBy: { createdAt: 'desc' }
     })
@@ -210,12 +248,36 @@ export async function fetchManagerQueue() {
     ...timesheets.map(t => ({ id: t.id, type: 'timesheet', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
     ...transfers.map(t => ({ id: t.id, type: 'transfer', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
     ...incidents.map(t => ({ id: t.id, type: 'incident', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
-    ...timeOffs.map(t => ({ id: t.id, type: 'time-off', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
+    ...timeOffs.map(t => ({ id: t.id, type: 'time-off', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...snowLogs.map(t => ({ id: t.id, type: 'snow-log', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
+  ];
+  return unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export async function fetchAdminQueue() {
+  const user = await getSessionUser();
+  if (!user || user.role !== 'admin') return [];
+
+  const [timesheets, transfers, incidents, timeOffs, snowLogs, capexRequests] = await Promise.all([
+    prisma.timesheet.findMany({ include: { submitter: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }}),
+    prisma.transferRecord.findMany({ include: { submitter: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }}),
+    prisma.incidentReport.findMany({ include: { submitter: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }}),
+    prisma.timeOffRequest.findMany({ include: { submitter: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }}),
+    prisma.snowRemovalLog.findMany({ include: { submitter: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }}),
+    prisma.capExRequest.findMany({ include: { submitter: { select: { name: true, email: true } } }, orderBy: { createdAt: 'desc' }})
+  ]);
+
+  const unified = [
+    ...timesheets.map(t => ({ id: t.id, type: 'timesheet', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...transfers.map(t => ({ id: t.id, type: 'transfer', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...incidents.map(t => ({ id: t.id, type: 'incident', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...timeOffs.map(t => ({ id: t.id, type: 'time-off', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...snowLogs.map(t => ({ id: t.id, type: 'snow-log', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t })),
+    ...capexRequests.map(t => ({ id: t.id, type: 'capex', status: toAppStatus(t.status), submitterId: t.submitterId, submitterName: t.submitter.name || t.submitter.email, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString(), data: t }))
   ];
 
   return unified.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 }
-
 // =========================================================================
 // FETCH FULL SUBMISSION (with comments + submitter name)
 // =========================================================================
@@ -256,7 +318,7 @@ export async function fetchSubmissionById(id: string): Promise<FullSubmission | 
   const submitterSelect = { select: { name: true, email: true } };
   const commentInclude = { include: { author: { select: { name: true, email: true, role: true } } }, orderBy: { createdAt: 'asc' } as const };
 
-  const [timesheet, transfer, incident, timeOff] = await Promise.all([
+  const [timesheet, transfer, incident, timeOff, snowLog] = await Promise.all([
     prisma.timesheet.findUnique({
       where: { id },
       include: { submitter: submitterSelect, comments: commentInclude }
@@ -270,6 +332,10 @@ export async function fetchSubmissionById(id: string): Promise<FullSubmission | 
       include: { submitter: submitterSelect, comments: commentInclude }
     }),
     prisma.timeOffRequest.findUnique({
+      where: { id },
+      include: { submitter: submitterSelect, comments: commentInclude }
+    }),
+    prisma.snowRemovalLog.findUnique({
       where: { id },
       include: { submitter: submitterSelect, comments: commentInclude }
     }),
@@ -325,6 +391,20 @@ export async function fetchSubmissionById(id: string): Promise<FullSubmission | 
     };
   }
 
+  if (snowLog) {
+    const { submitter, comments, id: _id, submitterId, status, createdAt, updatedAt, ...fields } = snowLog;
+    return {
+      id: _id, type: 'snow-log', status: toAppStatus(status), submitterId,
+      submitterName: submitter.name || submitter.email,
+      createdAt: createdAt.toISOString(), updatedAt: updatedAt.toISOString(),
+      data: { 
+        ...fields, 
+        date: fields.date?.toISOString() ?? null 
+      },
+      comments: comments.map(serializeComment),
+    };
+  }
+
   return null;
 }
 
@@ -343,6 +423,7 @@ export async function addComment(submissionId: string, type: string, content: st
     case 'transfer': linkField.transferRecord = { connect: { id: submissionId } }; break;
     case 'incident': linkField.incidentReport = { connect: { id: submissionId } }; break;
     case 'time-off': linkField.timeOffRequest = { connect: { id: submissionId } }; break;
+    case 'snow-log': linkField.snowRemovalLog = { connect: { id: submissionId } }; break;
     default: throw new Error('Invalid submission type');
   }
 
@@ -477,6 +558,26 @@ export async function updateSubmissionData(id: string, type: string, fields: For
       });
       break;
     }
+    case 'snow-log': {
+      const record = await prisma.snowRemovalLog.findUnique({ where: { id }, select: { submitterId: true, status: true } });
+      if (!record) throw new Error('Record not found');
+      if (record.submitterId !== user.id) throw new Error('Unauthorized');
+      if (lockedStatuses.includes(record.status)) throw new Error('This submission is locked and cannot be edited.');
+      await prisma.snowRemovalLog.update({
+        where: { id },
+        data: {
+          date: fields.get('date') ? new Date(fields.get('date') as string) : null,
+          snowRemovalRequired: fields.get('snowRemovalRequired') as string || null,
+          iceSalt: fields.get('iceSalt') as string || null,
+          manualShoveling: fields.get('manualShoveling') as string || null,
+          contractedPlow: fields.get('contractedPlow') as string || null,
+          iceBreaking: fields.get('iceBreaking') as string || null,
+          notes: fields.get('notes') as string || null,
+          status: 'PENDING',
+        }
+      });
+      break;
+    }
     default:
       throw new Error('Invalid submission type');
   }
@@ -505,6 +606,8 @@ export async function updateSubmissionStatus(id: string, type: string, newStatus
       await prisma.incidentReport.update({ where: { id }, data: { status: dbStatus } }); break;
     case 'time-off':
       await prisma.timeOffRequest.update({ where: { id }, data: { status: dbStatus } }); break;
+    case 'snow-log':
+      await prisma.snowRemovalLog.update({ where: { id }, data: { status: dbStatus } }); break;
     default:
       throw new Error('Invalid submission type');
   }

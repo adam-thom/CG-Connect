@@ -26,6 +26,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
   const [transferType, setTransferType] = useState<string>("Standard");
   const [hasTransferTime, setHasTransferTime] = useState<boolean>(false);
   const [funeralDirectors, setFuneralDirectors] = useState<{id: string, name: string | null}[]>([]);
+  const [snowRemovalRequired, setSnowRemovalRequired] = useState<boolean>(false);
 
   useEffect(() => {
     fetchFuneralDirectors().then(setFuneralDirectors);
@@ -33,11 +34,18 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
 
   useEffect(() => {
     if (state.success) {
-      router.push("/employee/submissions");
+      if (user?.role === 'manager' || user?.role === 'admin') {
+        router.push("/manager/dashboard");
+      } else {
+        router.push("/employee/submissions");
+      }
     }
   }, [state.success, router]);
 
   if (!user) return null;
+
+  const userTagNames = user?.tags?.map((t: any) => t.name.toUpperCase()) || user?.assignedRoles?.map((r: string) => r.toUpperCase()) || [];
+  const requiresLocationSelect = userTagNames.includes("PART TIME EMPLOYEE");
 
   const renderTimesheetForm = () => (
     <div className="space-y-6 relative">
@@ -49,16 +57,18 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
-        <div className="col-span-1 sm:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
-          <select name="location" className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
-            <option value="">-- Select Target Location Hierarchy --</option>
-            <option value="MB">Location Manager - MB</option>
-            <option value="CSG">Location Manager - CSG</option>
-            <option value="EVG">Location Manager - EVG</option>
-            <option value="EDENS">Location Manager - EDENS</option>
-          </select>
-        </div>
+        {requiresLocationSelect && (
+          <div className="col-span-1 sm:col-span-2">
+            <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
+            <select name="location" required={requiresLocationSelect} className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
+              <option value="">-- Select Target Location Hierarchy --</option>
+              <option value="MB">Location Manager - MB</option>
+              <option value="CSG">Location Manager - CSG</option>
+              <option value="EVG">Location Manager - EVG</option>
+              <option value="EDENS">Location Manager - EDENS</option>
+            </select>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Date</label>
           <input type="date" name="date" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
@@ -390,16 +400,18 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
          <p className="text-sm text-red-700 font-medium">All incident reports automatically deploy alerts to the assigned OHS MANAGER.</p>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
-        <select name="location" className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
-          <option value="">-- Coordinate with Location --</option>
-          <option value="MB">Location Manager - MB</option>
-          <option value="CSG">Location Manager - CSG</option>
-          <option value="EVG">Location Manager - EVG</option>
-          <option value="EDENS">Location Manager - EDENS</option>
-        </select>
-      </div>
+      {requiresLocationSelect && (
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
+          <select name="location" required={requiresLocationSelect} className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
+            <option value="">-- Coordinate with Location --</option>
+            <option value="MB">Location Manager - MB</option>
+            <option value="CSG">Location Manager - CSG</option>
+            <option value="EVG">Location Manager - EVG</option>
+            <option value="EDENS">Location Manager - EDENS</option>
+          </select>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <div>
@@ -455,7 +467,20 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
          <p className="text-sm text-brand-700 font-medium">Managers will be instantly notified to authorize this schedule blockage.</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
+      {requiresLocationSelect && (
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
+          <select name="location" className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer" required={requiresLocationSelect}>
+            <option value="">-- Coordinate with Location --</option>
+            <option value="MB">Location Manager - MB</option>
+            <option value="CSG">Location Manager - CSG</option>
+            <option value="EVG">Location Manager - EVG</option>
+            <option value="EDENS">Location Manager - EDENS</option>
+          </select>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10 w-full mt-6">
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Start Date</label>
           <input type="date" name="startDate" className="w-full border border-slate-200 rounded-lg p-3 bg-white focus:ring-2 focus:ring-brand-500" required />
@@ -473,12 +498,67 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
     </div>
   );
 
+  const renderSnowLogForm = () => (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Date *</label>
+          <input type="date" name="date" required className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase tracking-wide">Snow Removal Required?</label>
+          <div className="flex items-center gap-6 mt-2">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="radio" name="snowRemovalRequired" value="Yes" checked={snowRemovalRequired} onChange={() => setSnowRemovalRequired(true)} className="w-5 h-5 text-brand-600 focus:ring-brand-500" />
+              <span className="font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Yes</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="radio" name="snowRemovalRequired" value="No" checked={!snowRemovalRequired} onChange={() => setSnowRemovalRequired(false)} className="w-5 h-5 text-brand-600 focus:ring-brand-500" />
+              <span className="font-medium text-slate-700 group-hover:text-slate-900 transition-colors">No</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {snowRemovalRequired && (
+        <div className="p-6 border border-brand-200 bg-brand-50 rounded-2xl animate-in fade-in slide-in-from-top-2">
+          <label className="block text-sm font-bold text-brand-900 mb-4 uppercase tracking-wide">Select Actions Taken</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+              <input type="checkbox" name="iceSalt" value="Yes" className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+              <span className="font-medium text-slate-700">Ice Salt</span>
+            </label>
+            <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+              <input type="checkbox" name="manualShoveling" value="Yes" className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+              <span className="font-medium text-slate-700">Manual Shovelling</span>
+            </label>
+            <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+              <input type="checkbox" name="contractedPlow" value="Yes" className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+              <span className="font-medium text-slate-700">Contracted Plow</span>
+            </label>
+            <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+              <input type="checkbox" name="iceBreaking" value="Yes" className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+              <span className="font-medium text-slate-700">Ice Breaking</span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
+        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[120px] focus:ring-2 focus:ring-brand-500" placeholder="Optional details..."></textarea>
+      </div>
+    </div>
+  );
+
   const getTitle = () => {
     switch(params.type) {
       case "timesheet": return "Submit Timesheet";
       case "transfer": return "Log Transfer Record";
       case "incident": return "File Incident Report";
       case "time-off": return "Request Time Off";
+      case "snow-log": return "Snow Removal Log";
       default: return `Submit ${params.type}`;
     }
   };
@@ -489,6 +569,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
       case "transfer": return renderTransferForm();
       case "incident": return renderIncidentForm();
       case "time-off": return renderTimeOffForm();
+      case "snow-log": return renderSnowLogForm();
       default: return <p className="text-slate-500">Generic form for {params.type}</p>;
     }
   };

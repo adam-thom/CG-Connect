@@ -47,29 +47,31 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
       <div className="ml-4 flex items-center gap-5">
         
         {/* DEV ROLE SLIDER */}
-        <div className="hidden md:flex items-center bg-slate-100/80 p-1.5 rounded-full mr-2 border border-slate-200/60 shadow-inner relative">
-           {isPending && (
-             <div className="absolute -left-6 top-1/2 -translate-y-1/2">
-                <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
-             </div>
-           )}
-           {['employee', 'manager', 'admin'].map(r => (
-             <button
-               key={r}
-               disabled={isPending}
-               onClick={() => {
-                 if (user.role !== r) {
-                    startTransition(() => {
-                       switchDevRole(r);
-                    });
-                 }
-               }}
-               className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all duration-300 ${user.role === r ? 'bg-white shadow-sm text-brand-900 border-slate-200/60' : 'text-slate-500 hover:text-slate-800'}`}
-             >
-               {r}
-             </button>
-           ))}
-        </div>
+        {user.email === 'dev@caringroup.com' && (
+          <div className="hidden md:flex items-center bg-slate-100/80 p-1.5 rounded-full mr-2 border border-slate-200/60 shadow-inner relative">
+             {isPending && (
+               <div className="absolute -left-6 top-1/2 -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 animate-spin text-brand-500" />
+               </div>
+             )}
+             {['employee', 'manager', 'admin'].map(r => (
+               <button
+                 key={r}
+                 disabled={isPending}
+                 onClick={() => {
+                   if (user.role !== r) {
+                      startTransition(() => {
+                         switchDevRole(r);
+                      });
+                   }
+                 }}
+                 className={`px-4 py-1.5 rounded-full text-xs font-bold capitalize transition-all duration-300 ${user.role === r ? 'bg-white shadow-sm text-brand-900 border-slate-200/60' : 'text-slate-500 hover:text-slate-800'}`}
+               >
+                 {r}
+               </button>
+             ))}
+          </div>
+        )}
 
         <button className="text-slate-400 hover:text-brand-900 relative p-1 transition-colors rounded-full hover:bg-slate-50">
           <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-accent-500 ring-2 ring-white" />

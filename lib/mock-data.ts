@@ -246,7 +246,7 @@ export const MOCK_DOCUMENTS: Document[] = [
   }
 ];
 
-export type ScheduleRole = "Lead Director - MB" | "Lead Director - CSG" | "Lead Director - EVG" | "Lead Director - EDENS" | "TRANSFERS - FIRST" | "TRANSFERS - SECOND" | "TRANSFERS - BACK UP" | "CREMATIONS" | "ME RUN";
+export type ScheduleRole = "Lead Director - MB" | "Lead Director - CSG" | "Lead Director - EVG" | "Lead Director - EDENS" | "TRANSFERS - FIRST" | "TRANSFERS - SECOND" | "TRANSFERS - BACK UP" | "CREMATIONS" | "PREPS" | "ME RUN";
 
 export interface ScheduleEntry {
   id: string;

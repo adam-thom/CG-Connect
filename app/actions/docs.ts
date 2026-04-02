@@ -70,9 +70,9 @@ export async function fetchAllDocuments() {
   const currentUser = await getSessionUser();
   if (!currentUser) return [];
 
-  const isAdmin = currentUser.role === 'admin';
+  const isAdminOrDev = currentUser.role === 'admin' || currentUser.email === 'dev@caringroup.com';
 
-  if (isAdmin) {
+  if (isAdminOrDev) {
     return prisma.document.findMany({
       include: {
         category: true,

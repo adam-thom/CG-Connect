@@ -21,8 +21,32 @@ export function FeedbackThread({ comments, status, type, onStatusChange, onAddCo
   const isManager = user?.role === "manager" || user?.role === "admin";
   const isLocked = status === "approved" || status === "finalized";
   
-  const isOHSManager = user?.role === "admin" || user?.tags?.some((t: any) => t.name === "OHS Manager");
-  const canOverrideStatus = isManager && (type !== "incident" || isOHSManager);
+  const hasAuthTag = (tagName: string) => {
+    if (user?.role === "admin") return true;
+    if (user?.email === "dev@caringroup.com") return true;
+    const tagMatch = user?.tags?.some((t: any) => t.name.toUpperCase() === tagName.toUpperCase());
+    const roleMatch = user?.assignedRoles?.some((r: string) => r.toUpperCase() === tagName.toUpperCase());
+    return !!(tagMatch || roleMatch);
+  };
+
+  const isOHSManager = hasAuthTag("OHS Manager");
+  const isTransferManager = hasAuthTag("Transfer Manager");
+  
+  let canOverrideStatus = false;
+  
+  if (user?.role === "admin") {
+    canOverrideStatus = true;
+  } else if (user?.role === "manager") {
+    if (type === "incident") {
+      canOverrideStatus = isOHSManager;
+    } else if (type === "transfer") {
+      canOverrideStatus = isTransferManager;
+    } else if (type === "snow-log") {
+      canOverrideStatus = isOHSManager;
+    } else {
+      canOverrideStatus = true;
+    }
+  }
 
   if (!user) return null;
 

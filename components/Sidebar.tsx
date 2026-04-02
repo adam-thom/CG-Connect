@@ -54,6 +54,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
   const adminLinks = [
     { name: 'Admin Console', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Staff Directory', href: '/admin/users', icon: Users },
+    { name: 'Master Queue', href: '/admin/submissions', icon: FileText },
     { name: 'Document Control', href: '/admin/docs', icon: FolderOpen },
     { name: 'CapEx Oversight', href: '/admin/capex', icon: Wallet },
     { name: 'Notifications', href: '/notifications', icon: Bell },

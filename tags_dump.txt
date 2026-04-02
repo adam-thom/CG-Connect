@@ -1,0 +1,32 @@
+MANAGER TAGS	EMPLOYEE TAGS	ADDITIONAL TAGS	
+MB Manager	MB Employee	ADMIN	
+CSG Manager	CSG Employee	IT Department	
+EVG Manager	EVG Employee		
+EDENS Manager	EDENS Employee		
+TRANSFER Manager	TRANSFER Employee		
+OHS Manager	PART TIME Employee		
+REGIONAL Manager - South			
+REGIONAL Manager - North			
+			
+			
+			
+DEV NOTE: Where "Select a Manager Tag" appears, user must be able to choose one of the following from a drop down menu: MB Manager, CSG Manager, EVG Manager, EDENS Manager			
+			
+Employee Tag Name	TIME SHEET FORM SUBMITS TO	TIME OFF REQUEST FORM SUBMITS TO	TRANSFER RECORDS FORM SUBMITS TO
+MB Employee	MB Manager	MB Manager	MB Manager, TRANSFER Manager
+CSG Employee	CSG Manager	CSG Manager	CSG Manager, TRANSFER Manager
+EVG Employee	EVG Manager	EVG Manager	EVG Manager, TRANSFER Manager
+EDENS Employee	EDENS Manager	EDENS Manager	EDENS Manager, TRANSFER Manager
+TRANSFER Employee	TRANSFER Manager	TRANSFER Manager	Select a Manager Tag,  TRANSFER Manager
+PART TIME Employee	Select a Manager Tag	Select a Manager Tag	
+			
+			
+Manager Tag Name	FUNDING REQUEST FORM SUBMITS TO		
+MB Manager	ADMIN, REGIONAL Manager - South		
+CSG Manager	ADMIN, REGIONAL Manager - South		
+EVG Manager	ADMIN, REGIONAL Manager - South		
+EDENS Manager	ADMIN, REGIONAL Manager - South		
+TRANSFER Manager	ADMIN, REGIONAL Manager - South		
+OHS Manager	ADMIN, REGIONAL Manager - South		
+REGIONAL Manager - South	ADMIN		
+REGIONAL Manager - North	ADMIN		

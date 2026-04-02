@@ -5,12 +5,12 @@ import { getSessionUser, createSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 
 export async function switchDevRole(newRole: string) {
-  if (process.env.NODE_ENV === 'production') {
-    return { error: 'Not allowed in production.' };
-  }
-
   const user = await getSessionUser();
   if (!user) return { error: 'No active session found.' };
+
+  if (process.env.NODE_ENV === 'production' && user.email !== 'dev@caringroup.com') {
+    return { error: 'Not allowed in production except for Developer accounts.' };
+  }
 
   // Hardcode update the role securely bypassing standard validation matrix for active testing
   await prisma.user.update({

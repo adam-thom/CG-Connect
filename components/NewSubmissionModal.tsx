@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/auth-context';
 import Link from 'next/link';
-import { Clock, Activity, AlertTriangle, CalendarDays, Wallet, X } from 'lucide-react';
+import { Clock, Activity, AlertTriangle, CalendarDays, Wallet, X, CloudSnow } from 'lucide-react';
 
 interface NewSubmissionModalProps {
   isOpen: boolean;
@@ -65,15 +65,24 @@ export function NewSubmissionModal({ isOpen, onClose }: NewSubmissionModalProps)
           </Link>
 
           {isManagerOrAdmin && (
-            <Link onClick={onClose} href="/manager/capex/new" className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow hover:border-brand-300 transition-all group flex flex-col items-center text-center gap-2 sm:gap-3 col-span-2">
-              <div className="p-2 sm:p-3 bg-emerald-50 rounded-xl group-hover:bg-emerald-100 transition-colors">
-                <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-brand-900 text-sm">CapEx Request</h3>
-                <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Capital Expenditure routing and approval</p>
-              </div>
-            </Link>
+            <>
+              <Link onClick={onClose} href="/manager/capex/new" className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow hover:border-brand-300 transition-all group flex flex-col items-center text-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-emerald-50 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                  <Wallet className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-brand-900 text-sm">CapEx Request</h3>
+                </div>
+              </Link>
+              <Link onClick={onClose} href="/employee/submissions/new/snow-log" className="bg-white p-3 sm:p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow hover:border-brand-300 transition-all group flex flex-col items-center text-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-sky-50 rounded-xl group-hover:bg-sky-100 transition-colors">
+                  <CloudSnow className="w-5 h-5 sm:w-6 sm:h-6 text-sky-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-brand-900 text-sm">Snow Removal</h3>
+                </div>
+              </Link>
+            </>
           )}
 
         </div>

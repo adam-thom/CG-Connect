@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { MOCK_SUBMISSIONS, MOCK_USERS } from "@/lib/mock-data";
-import { CheckCircle2, XCircle, Clock, SaveAll, Activity } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, SaveAll, Activity, ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,22 @@ export default function ManagerTimesheets() {
   if (!user) return null;
 
   const totalHours = timesheets.reduce((acc, curr) => acc + (curr.data.totalHours || 0), 0);
+
+  const groupedTimesheets = timesheets.reduce((acc, current) => {
+    if (!acc[current.submitterId]) {
+      acc[current.submitterId] = {
+        submitterId: current.submitterId,
+        submitterName: current.submitterName,
+        totalHours: 0,
+        timesheets: []
+      };
+    }
+    acc[current.submitterId].timesheets.push(current);
+    acc[current.submitterId].totalHours += (current.data.totalHours || 0);
+    return acc;
+  }, {} as Record<string, { submitterId: string, submitterName: string, totalHours: number, timesheets: typeof timesheets }>);
+  
+  const groupedArray = Object.values(groupedTimesheets);
 
   const handleAction = (id: string, action: 'approved' | 'revision-required') => {
     setTimesheets(prev => prev.filter(t => t.id !== id));
@@ -86,45 +102,60 @@ export default function ManagerTimesheets() {
               <p className="text-slate-500">There are no timesheets pending review at this time.</p>
             </div>
           ) : (
-            timesheets.map(t => (
-              <div key={t.id} className="p-6 hover:bg-slate-50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 group">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center shrink-0">
-                      {t.submitterName.charAt(0)}
+            groupedArray.map(group => (
+              <details key={group.submitterId} className="group/details border-b border-slate-100 last:border-0 [&_summary::-webkit-details-marker]:hidden">
+                <summary className="p-6 hover:bg-slate-50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-6 cursor-pointer list-none">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center shrink-0">
+                        {group.submitterName.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-brand-900 text-lg">{group.submitterName}</p>
+                        <p className="text-sm text-slate-500">{group.timesheets.length} Pending Submission{group.timesheets.length !== 1 ? 's' : ''}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-brand-900 text-lg">{t.submitterName}</p>
-                      <p className="text-sm text-slate-500">{new Date(t.data.date).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })} • {t.data.start} to {t.data.end}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="shrink-0 flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-slate-800">{t.data.totalHours} h</p>
-                    <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Calculated</p>
                   </div>
 
-                  <div className="flex items-center gap-2 h-12 w-full md:w-auto border-t md:border-t-0 border-slate-100 pt-4 md:pt-0">
-                    <button 
-                      onClick={() => handleAction(t.id, 'revision-required')}
-                      className="flex-1 md:flex-none p-3 h-full rounded-xl text-orange-600 bg-orange-50 border border-orange-200 hover:bg-orange-100 hover:border-orange-300 font-medium transition-colors flex items-center justify-center gap-2"
-                      title="Reject / Request Revision"
-                    >
-                      <XCircle className="w-5 h-5" /> 
-                      <span className="md:hidden lg:inline text-sm">Reject</span>
-                    </button>
-                    <button 
-                      onClick={() => handleAction(t.id, 'approved')}
-                      className="flex-1 md:flex-none px-6 h-full rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-bold transition-colors flex items-center justify-center gap-2"
-                    >
-                      <CheckCircle2 className="w-5 h-5" />
-                      Approve
-                    </button>
+                  <div className="shrink-0 flex items-center gap-6">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-slate-800">{group.totalHours} h</p>
+                      <p className="text-xs text-slate-500 uppercase font-semibold tracking-wider">Total Accrued</p>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 transition-transform group-open/details:rotate-180 shrink-0">
+                      <ChevronDown className="w-5 h-5" />
+                    </div>
                   </div>
+                </summary>
+                
+                <div className="bg-slate-50/80 p-6 pt-2 space-y-4">
+                  {group.timesheets.map(t => (
+                    <div key={t.id} className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+                      <div>
+                        <p className="font-bold text-brand-900 text-lg">{new Date(t.data.date).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' })}</p>
+                        <p className="text-sm text-slate-500 font-medium mt-1">{t.data.start} to {t.data.end} <span className="mx-2 text-slate-300">|</span> <span className="text-slate-800 font-semibold">{t.data.totalHours}h reported</span></p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button 
+                          onClick={() => handleAction(t.id, 'revision-required')}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-orange-700 bg-orange-50 border border-orange-200 hover:bg-orange-100 transition-colors font-medium"
+                        >
+                          <XCircle className="w-4 h-4" /> 
+                          Reject
+                        </button>
+                        <button 
+                          onClick={() => handleAction(t.id, 'approved')}
+                          className="flex items-center gap-2 px-6 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 font-bold transition-colors"
+                        >
+                          <CheckCircle2 className="w-4 h-4" /> 
+                          Approve
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </details>
             ))
           )}
         </div>

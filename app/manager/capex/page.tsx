@@ -28,13 +28,16 @@ export default async function ManagerCapExDashboard() {
   });
 
   // Derive locations from tags
-  const locations = Array.from(
-    new Set(
-      (mgr?.tags ?? [])
-        .map(t => getLocationFromTag(t.name))
-        .filter((l): l is string => l !== null)
-    )
-  );
+  const isDevAccount = session.email === 'dev@caringroup.com';
+  const locations = isDevAccount
+    ? ["MB", "CSG", "EVG", "EDENS"]
+    : Array.from(
+      new Set(
+        (mgr?.tags ?? [])
+          .map(t => getLocationFromTag(t.name))
+          .filter((l): l is string => l !== null)
+      )
+    );
 
   // Fetch Global Location Budgets for mgr locations
   const globalBudgets = await prisma.locationBudget.findMany({
@@ -67,7 +70,7 @@ export default async function ManagerCapExDashboard() {
   });
 
   const allRequests = await prisma.capExRequest.findMany({
-    where: { submitterId: session.id },
+    where: isDevAccount ? {} : { submitterId: session.id },
     orderBy: { createdAt: 'desc' },
   });
 

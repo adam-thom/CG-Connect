@@ -50,6 +50,7 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
   // Transfer state for conditional fields
   const [transferType, setTransferType] = useState(data.transferType || "Standard");
   const [funeralDirectors, setFuneralDirectors] = useState<{id: string, name: string | null}[]>([]);
+  const [snowRemovalRequired, setSnowRemovalRequired] = useState(data.snowRemovalRequired === 'Yes');
 
   useEffect(() => {
     if (type === 'transfer') {
@@ -343,11 +344,78 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
     </div>
   );
 
+  const renderSnowLog = () => (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
+        <Field label="Date" name="date" type="date" value={data.date?.split('T')[0]} />
+        
+        {isEditable && !isLocked ? (
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase tracking-wide">Snow Removal Required?</label>
+            <div className="flex items-center gap-6 mt-4">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input type="radio" name="snowRemovalRequired" value="Yes" checked={snowRemovalRequired} onChange={() => setSnowRemovalRequired(true)} className="w-5 h-5 text-brand-600 focus:ring-brand-500" />
+                <span className="font-medium text-slate-700 group-hover:text-slate-900 transition-colors">Yes</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input type="radio" name="snowRemovalRequired" value="No" checked={!snowRemovalRequired} onChange={() => setSnowRemovalRequired(false)} className="w-5 h-5 text-brand-600 focus:ring-brand-500" />
+                <span className="font-medium text-slate-700 group-hover:text-slate-900 transition-colors">No</span>
+              </label>
+            </div>
+          </div>
+        ) : (
+          <Field label="Snow Removal Required?" name="snowRemovalRequired" value={data.snowRemovalRequired} />
+        )}
+      </div>
+
+      {snowRemovalRequired && (
+        <div className="p-6 border border-brand-200 bg-brand-50 rounded-2xl animate-in fade-in slide-in-from-top-2">
+          <label className="block text-sm font-bold text-brand-900 mb-4 uppercase tracking-wide">Select Actions Taken</label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {isEditable && !isLocked ? (
+              <>
+                <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+                  <input type="checkbox" name="iceSalt" value="Yes" defaultChecked={data.iceSalt === 'Yes'} className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+                  <span className="font-medium text-slate-700">Ice Salt</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+                  <input type="checkbox" name="manualShoveling" value="Yes" defaultChecked={data.manualShoveling === 'Yes'} className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+                  <span className="font-medium text-slate-700">Manual Shovelling</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+                  <input type="checkbox" name="contractedPlow" value="Yes" defaultChecked={data.contractedPlow === 'Yes'} className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+                  <span className="font-medium text-slate-700">Contracted Plow</span>
+                </label>
+                <label className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-colors shadow-sm">
+                  <input type="checkbox" name="iceBreaking" value="Yes" defaultChecked={data.iceBreaking === 'Yes'} className="w-5 h-5 rounded text-brand-600 focus:ring-brand-500" />
+                  <span className="font-medium text-slate-700">Ice Breaking</span>
+                </label>
+              </>
+            ) : (
+              <div className="flex flex-wrap gap-2 col-span-2">
+                {data.iceSalt === 'Yes' && <span className="px-3 py-1 bg-white border border-slate-200 rounded text-sm font-medium shadow-sm">Ice Salt</span>}
+                {data.manualShoveling === 'Yes' && <span className="px-3 py-1 bg-white border border-slate-200 rounded text-sm font-medium shadow-sm">Manual Shovelling</span>}
+                {data.contractedPlow === 'Yes' && <span className="px-3 py-1 bg-white border border-slate-200 rounded text-sm font-medium shadow-sm">Contracted Plow</span>}
+                {data.iceBreaking === 'Yes' && <span className="px-3 py-1 bg-white border border-slate-200 rounded text-sm font-medium shadow-sm">Ice Breaking</span>}
+                {!(data.iceSalt === 'Yes' || data.manualShoveling === 'Yes' || data.contractedPlow === 'Yes' || data.iceBreaking === 'Yes') && (
+                  <span className="text-slate-500 italic">No specific actions documented</span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Field label="Notes" name="notes" value={data.notes} isNarrative />
+    </div>
+  );
+
   switch (type) {
     case 'timesheet': return renderTimesheet();
     case 'transfer': return renderTransfer();
     case 'incident': return renderIncident();
     case 'time-off': return renderTimeOff();
+    case 'snow-log': return renderSnowLog();
     default: return <p>Unsupported form type.</p>;
   }
 }
