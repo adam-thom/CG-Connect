@@ -2,12 +2,21 @@ export const metadata = {
   title: 'Notifications | CG Connect',
 };
 
-import { fetchNotifications, AppNotification } from '@/app/actions/notifications';
+import { fetchMyNotifications } from '@/app/actions/notifications';
 import { Bell, Clock, AlertTriangle, CheckCircle2, ChevronRight, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 
+export type AppNotification = {
+  id: string;
+  title: string;
+  message: string;
+  href: string | null;
+  read: boolean;
+  createdAt: string;
+};
+
 export default async function NotificationsPage() {
-  const notifications = await fetchNotifications();
+  const notifications = await fetchMyNotifications();
 
   return (
     <div className="max-w-4xl mx-auto py-8 animate-in fade-in duration-500">
@@ -38,21 +47,19 @@ export default async function NotificationsPage() {
           <ul className="divide-y divide-slate-100">
             {notifications.map((notif: AppNotification) => (
                <li key={notif.id} className="group hover:bg-slate-50 transition-colors">
-                 <Link href={notif.link} className="flex items-start gap-4 p-5 sm:p-6">
+                 <Link href={notif.href || '#'} className="flex items-start gap-4 p-5 sm:p-6">
                     <div className="mt-1 flex-shrink-0">
-                      {notif.type === 'action-required' && (
+                      {notif.title.toLowerCase().includes('required') || notif.title.toLowerCase().includes('action') || notif.title.toLowerCase().includes('alert') ? (
                         <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center border border-orange-200">
                           <AlertTriangle className="w-5 h-5" />
                         </div>
-                      )}
-                      {notif.type === 'update' && (
-                         <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center border border-blue-200">
-                           <MessageSquare className="w-5 h-5" />
-                         </div>
-                      )}
-                      {notif.type === 'reminder' && (
+                      ) : notif.title.toLowerCase().includes('reminder') ? (
                          <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center border border-amber-200">
                            <Clock className="w-5 h-5" />
+                         </div>
+                      ) : (
+                         <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center border border-blue-200">
+                           <MessageSquare className="w-5 h-5" />
                          </div>
                       )}
                     </div>

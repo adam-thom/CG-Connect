@@ -4,12 +4,14 @@ import React, { useState, useTransition } from 'react';
 import { submitCapExRequest, updateCapExRequest } from '@/app/actions/capex';
 import { UploadCloud, Loader2, DollarSign, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 export function CapExForm({ existingData, locations, availableBudgets }: { existingData?: any, locations?: string[], availableBudgets?: { id: string, name: string, location: string }[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
   const [loc, setLoc] = useState(existingData?.location || (locations?.[0] || ''));
+  const [isDragging, setIsDragging] = useState(false);
   
   const isEditing = !!existingData;
 
@@ -17,7 +19,6 @@ export function CapExForm({ existingData, locations, availableBudgets }: { exist
     e.preventDefault();
     setError('');
 
-    // Capture the form element NOW — e.currentTarget becomes null after the async transition
     const formEl = e.currentTarget;
     const formData = new FormData(formEl);
     const file1 = formData.get('quote1') as File;
@@ -48,41 +49,52 @@ export function CapExForm({ existingData, locations, availableBudgets }: { exist
   };
 
   return (
-    <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-      <h2 className="text-xl font-bold text-slate-900 mb-6">
-        {isEditing ? "Revise CapEx Blueprint" : "Submit New Capital Expenditure"}
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white p-8 lg:p-12 border border-slate-200 shadow-[4px_4px_20px_rgb(0,0,0,0.03)] max-w-4xl mx-auto rounded-none relative overflow-hidden"
+    >
+      {/* Structural Accent */}
+      <div className="absolute top-0 left-0 w-2 h-full bg-brand-900" />
+
+      <h2 className="text-2xl md:text-3xl font-serif font-bold text-slate-900 mb-8 tracking-tight">
+        {isEditing ? "Revise CapEx Blueprint" : "Capital Expenditure Request"}
       </h2>
       
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 font-medium mb-6">
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          className="bg-slate-900 text-white p-4 font-medium mb-8 flex items-center gap-2 rounded-none border-l-4 border-red-500"
+        >
           {error}
-        </div>
+        </motion.div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-8">
         <div>
-          <label className="block text-sm font-bold text-slate-700 mb-2">Project Name / Description</label>
+          <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Project Description</label>
           <input 
             type="text" 
             name="projectName" 
             defaultValue={existingData?.projectName || ''}
             required 
             placeholder="E.g., Facility Roof Repair - Summer"
-            className="w-full p-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium" 
+            className="w-full p-4 border-b-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-900 focus:outline-none transition-colors shadow-none font-medium text-slate-900 placeholder-slate-400 rounded-none" 
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Location Facility</label>
-            <div className="relative">
-              <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Facility</label>
+            <div className="relative group">
+              <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-brand-900 transition-colors" />
               <select 
                   name="location" 
                   value={loc}
                   onChange={e => setLoc(e.target.value)}
                   required 
-                  className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium appearance-none"
+                  className="w-full pl-12 pr-4 py-4 border-b-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-900 focus:outline-none transition-colors font-medium text-slate-800 appearance-none rounded-none"
               >
                   <option value="" disabled>Select location...</option>
                   {((locations && locations.length > 0) ? locations : ['MB', 'CSG', 'EVG', 'EDENS']).map(l => (
@@ -93,14 +105,14 @@ export function CapExForm({ existingData, locations, availableBudgets }: { exist
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Budget Category</label>
-            <div className="relative">
-              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Budget Category</label>
+            <div className="relative group">
+              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-brand-900 transition-colors" />
               <select 
                   name="budgetId" 
                   defaultValue={existingData?.budgetId || ''}
                   required 
-                  className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium appearance-none"
+                  className="w-full pl-12 pr-4 py-4 border-b-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-900 focus:outline-none transition-colors font-medium text-slate-800 appearance-none disabled:opacity-50 rounded-none"
               >
                   <option value="" disabled>Select budget category...</option>
                   {availableBudgets?.filter(b => b.location === loc).map(b => (
@@ -111,9 +123,9 @@ export function CapExForm({ existingData, locations, availableBudgets }: { exist
           </div>
           
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Required Amount</label>
-            <div className="relative">
-              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <label className="block text-xs font-bold text-slate-500 mb-2 uppercase tracking-widest">Required Amount</label>
+            <div className="relative group">
+              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-brand-900 transition-colors" />
               <input 
                   type="number" 
                   name="amount" 
@@ -122,43 +134,54 @@ export function CapExForm({ existingData, locations, availableBudgets }: { exist
                   step="0.01" 
                   min="0"
                   placeholder="0.00"
-                  className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium"
+                  className="w-full pl-12 pr-4 py-4 border-b-2 border-slate-200 bg-slate-50 focus:bg-white focus:border-brand-900 focus:outline-none transition-colors font-medium text-slate-800 rounded-none"
               />
             </div>
           </div>
         </div>
 
-        <div className="p-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4">
-                <UploadCloud className="w-4 h-4 text-slate-500" /> Standardized Reference Processing
+        <motion.div 
+           onDragEnter={() => setIsDragging(true)}
+           onDragLeave={() => setIsDragging(false)}
+           onDrop={() => setIsDragging(false)}
+          className={`p-8 border border-slate-300 ${isDragging ? 'bg-brand-50 border-brand-900' : 'bg-white'} rounded-none transition-colors duration-300`}
+        >
+            <h3 className="text-base font-serif font-bold text-slate-900 flex items-center gap-3 mb-2">
+                <motion.div
+                  animate={isDragging ? { y: [0, -5, 0] } : {}}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                >
+                  <UploadCloud className="w-6 h-6 text-brand-900" />
+                </motion.div>
+                 Reference Documentation
             </h3>
-            <p className="text-xs text-slate-500 font-medium mb-6 max-w-lg">
-                Upload exactly two verifiable contract or invoice estimate quotes verifying standard market values (Supported: .pdf, .docx, .doc).
+            <p className="text-sm text-slate-500 font-medium mb-6 max-w-xl leading-relaxed">
+                Provide two verified vendor quotes or project estimates to authorize the requested capital limit (Supported: .pdf, .docx).
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                   <label className="block text-xs font-bold text-slate-500 mb-2">Comparable Quote A</label>
-                   <input type="file" name="quote1" accept=".pdf,.docx,.doc" className="w-full text-sm font-medium file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#91665b]/10 file:text-[#91665b] hover:file:bg-[#91665b]/20 file:transition-colors file:cursor-pointer p-1" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="border border-slate-200 p-4 bg-slate-50">
+                   <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-3 block">Primary Quote</label>
+                   <input type="file" name="quote1" accept=".pdf,.docx,.doc" className="w-full text-sm font-medium file:mr-4 file:py-2 file:px-4 file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wider file:bg-slate-900 file:text-white hover:file:bg-slate-800 file:transition-colors file:cursor-pointer p-0 file:rounded-none" />
                 </div>
-                <div>
-                   <label className="block text-xs font-bold text-slate-500 mb-2">Comparable Quote B</label>
-                   <input type="file" name="quote2" accept=".pdf,.docx,.doc" className="w-full text-sm font-medium file:mr-4 file:py-2.5 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#91665b]/10 file:text-[#91665b] hover:file:bg-[#91665b]/20 file:transition-colors file:cursor-pointer p-1" />
+                <div className="border border-slate-200 p-4 bg-slate-50">
+                   <label className="block text-[10px] uppercase font-bold tracking-widest text-slate-500 mb-3 block">Secondary Quote</label>
+                   <input type="file" name="quote2" accept=".pdf,.docx,.doc" className="w-full text-sm font-medium file:mr-4 file:py-2 file:px-4 file:border-0 file:text-xs file:font-bold file:uppercase file:tracking-wider file:bg-slate-900 file:text-white hover:file:bg-slate-800 file:transition-colors file:cursor-pointer p-0 file:rounded-none" />
                 </div>
             </div>
-        </div>
+        </motion.div>
 
-        <div className="pt-4 border-t border-slate-100 flex justify-end">
+        <div className="pt-8 border-t border-slate-200 flex justify-end">
             <button 
                 type="submit" 
                 disabled={isPending}
-                className="bg-[#91665b] hover:bg-[#674840] disabled:opacity-50 text-white px-8 py-4 rounded-full font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2 group w-full sm:w-auto justify-center"
+                className="bg-brand-900 hover:bg-brand-950 disabled:opacity-50 text-white px-10 py-5 rounded-none font-bold uppercase tracking-widest text-sm transition-colors flex items-center gap-3 w-full sm:w-auto justify-center"
             >
                 {isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : null}
-                {isEditing ? 'Save Revisions' : 'Submit for Oversight Approval'}
+                {isEditing ? 'Save Revisions' : 'Authorize Expenditure'}
             </button>
         </div>
       </form>
-    </div>
+    </motion.div>
   );
 }

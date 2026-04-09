@@ -1,64 +1,49 @@
 @import "tailwindcss";
 
 @layer base {
-  :root {
-    --brand-50: #fdf5f3;
-    --brand-100: #fbe8e4;
-    --brand-200: #dac6b4;
-    --brand-300: #c5a79c;
-    --brand-400: #c0836b;
-    --brand-500: #c0836b;
-    --brand-600: #c9714e;
-    --brand-700: #91665b;
-    --brand-800: #91665b;
-    --brand-900: #674840;
-    --brand-950: #242728;
-    --brand-contrast: #ffffff;
-  }
-  
   .theme-employee {
-    --brand-50: #F5EFEB;
-    --brand-100: #EADFDB;
-    --brand-200: #D6BEB7;
-    --brand-300: #C19C91;
-    --brand-400: #A16D5F;
-    --brand-500: #9B5D4E;
-    --brand-600: #814A3E;
-    --brand-700: #673A30;
-    --brand-800: #4B2A23;
-    --brand-900: #361F1A;
-    --brand-950: #1B0F0D;
-    --brand-contrast: #ffffff;
+    --color-brand-50: #F5EFEB;
+    --color-brand-100: #EADFDB;
+    --color-brand-200: #D6BEB7;
+    --color-brand-300: #C19C91;
+    --color-brand-400: #A16D5F;
+    --color-brand-500: #9B5D4E;
+    --color-brand-600: #814A3E;
+    --color-brand-700: #673A30;
+    --color-brand-800: #4B2A23;
+    --color-brand-900: #361F1A;
+    --color-brand-950: #1B0F0D;
+    --color-brand-contrast: #ffffff;
   }
   
   .theme-manager {
-    --brand-50: #F8F2EF;
-    --brand-100: #F0E3DE;
-    --brand-200: #E0C5BA;
-    --brand-300: #D0A796;
-    --brand-400: #C38B76;
-    --brand-500: #BC7E69;
-    --brand-600: #9C6654;
-    --brand-700: #7E5142;
-    --brand-800: #5F3C31;
-    --brand-900: #432B23;
-    --brand-950: #211511;
-    --brand-contrast: #ffffff;
+    --color-brand-50: #F8F2EF;
+    --color-brand-100: #F0E3DE;
+    --color-brand-200: #E0C5BA;
+    --color-brand-300: #D0A796;
+    --color-brand-400: #C38B76;
+    --color-brand-500: #BC7E69;
+    --color-brand-600: #9C6654;
+    --color-brand-700: #7E5142;
+    --color-brand-800: #5F3C31;
+    --color-brand-900: #432B23;
+    --color-brand-950: #211511;
+    --color-brand-contrast: #ffffff;
   }
   
   .theme-admin {
-    --brand-50: #FAECE9;
-    --brand-100: #EEDBD6;
-    --brand-200: #DFCCC7;
-    --brand-300: #D1B8B0;
-    --brand-400: #CCAFA7;
-    --brand-500: #C8A69E;
-    --brand-600: #A68A83;
-    --brand-700: #856E69;
-    --brand-800: #63524E;
-    --brand-900: #423734;
-    --brand-950: #211B1A;
-    --brand-contrast: #364E4D;
+    --color-brand-50: #FAECE9;
+    --color-brand-100: #EEDBD6;
+    --color-brand-200: #DFCCC7;
+    --color-brand-300: #D1B8B0;
+    --color-brand-400: #CCAFA7;
+    --color-brand-500: #C8A69E;
+    --color-brand-600: #A68A83;
+    --color-brand-700: #856E69;
+    --color-brand-800: #63524E;
+    --color-brand-900: #423734;
+    --color-brand-950: #211B1A;
+    --color-brand-contrast: #364E4D;
   }
 
   /* Admin Theme override for text legibility on Brand backgrounds */
@@ -70,44 +55,77 @@
 }
 
 @theme {
-  /* Slate Scale - Using Image Colors */
-  --color-slate-50: #F0EFEB;
-  --color-slate-100: #e8e6df;
-  --color-slate-200: #dcd9cf;
-  --color-slate-300: #d1cfc8;
-  --color-slate-400: #b4bdc2;
-  --color-slate-500: #929ba1;
-  --color-slate-600: #748085;
-  --color-slate-700: #727b82;
-  --color-slate-800: #515050;
-  --color-slate-900: #42403F;
-  --color-slate-950: #201f1f;
+  /* Fonts */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-playfair), ui-serif, Georgia, serif;
 
-  /* Brand Scale - dynamically mapped */
-  --color-brand-50: var(--brand-50);
-  --color-brand-100: var(--brand-100);
-  --color-brand-200: var(--brand-200);
-  --color-brand-300: var(--brand-300);
-  --color-brand-400: var(--brand-400);
-  --color-brand-500: var(--brand-500);
-  --color-brand-600: var(--brand-600);
-  --color-brand-700: var(--brand-700);
-  --color-brand-800: var(--brand-800);
-  --color-brand-900: var(--brand-900);
-  --color-brand-950: var(--brand-950);
-  --color-brand-contrast: var(--brand-contrast);
+  /* Slate Scale - Strictly Mixed Between Cream and Dark Slate */
+  --color-slate-50: #F0EFEB;
+  --color-slate-100: color-mix(in srgb, #F0EFEB 85%, #42403F);
+  --color-slate-200: color-mix(in srgb, #F0EFEB 75%, #42403F);
+  --color-slate-300: color-mix(in srgb, #F0EFEB 65%, #42403F);
+  --color-slate-400: color-mix(in srgb, #F0EFEB 50%, #42403F);
+  --color-slate-500: color-mix(in srgb, #F0EFEB 35%, #42403F);
+  --color-slate-600: color-mix(in srgb, #F0EFEB 20%, #42403F);
+  --color-slate-700: color-mix(in srgb, #F0EFEB 10%, #42403F);
+  --color-slate-800: color-mix(in srgb, #F0EFEB 5%, #42403F);
+  --color-slate-900: #42403F;
+  --color-slate-950: color-mix(in srgb, #42403F 80%, black);
+
+  /* Brand Scale - dynamically mapped defaults for Login Page */
+  --color-brand-50: #fdf5f3;
+  --color-brand-100: #fbe8e4;
+  --color-brand-200: #dac6b4;
+  --color-brand-300: #c5a79c;
+  --color-brand-400: #c0836b;
+  --color-brand-500: #c0836b;
+  --color-brand-600: #c9714e;
+  --color-brand-700: #91665b;
+  --color-brand-800: #91665b;
+  --color-brand-900: #674840;
+  --color-brand-950: #242728;
+  --color-brand-contrast: #ffffff;
 
   /* Accents */
-  --color-accent-100: #e4ecee;
-  --color-accent-200: #b8cdd2;
+  --color-accent-100: color-mix(in srgb, #364E4D 10%, #F0EFEB);
+  --color-accent-200: color-mix(in srgb, #364E4D 25%, #F0EFEB);
   --color-accent-500: #364E4D;
-  --color-accent-600: #243534;
-  --color-accent-700: #141f1e;
+  --color-accent-600: color-mix(in srgb, #364E4D 85%, #42403F);
+  --color-accent-700: color-mix(in srgb, #364E4D 70%, #42403F);
 
-  --color-status-pending: #E5A877;
-  --color-status-revision: #E5A877;
-  --color-status-finalized: #2f9aad;
-  --color-status-approved: #0d7f94;
+  /* Status Colors */
+  --color-status-pending: #DFAC79;
+  --color-status-revision: #9B5D4E;
+  --color-status-finalized: #364E4D;
+  --color-status-approved: #364E4D;
+
+  /* ------------------------------------- */
+  /* SYSTEM FRAMEWORK HIJACKING            */
+  /* ------------------------------------- */
+
+  /* Red -> Dark Terracotta (#9B5D4E) */
+  --color-red-50: color-mix(in srgb, #9B5D4E 15%, #F0EFEB);
+  --color-red-100: color-mix(in srgb, #9B5D4E 25%, #F0EFEB);
+  --color-red-400: color-mix(in srgb, #9B5D4E 85%, #F0EFEB);
+  --color-red-500: #9B5D4E;
+  --color-red-600: color-mix(in srgb, #9B5D4E 85%, #42403F);
+  --color-red-700: color-mix(in srgb, #9B5D4E 70%, #42403F);
+
+  /* Green -> Dark Teal (#364E4D) */
+  --color-green-50: color-mix(in srgb, #364E4D 15%, #F0EFEB);
+  --color-green-100: color-mix(in srgb, #364E4D 25%, #F0EFEB);
+  --color-green-400: color-mix(in srgb, #364E4D 85%, #F0EFEB);
+  --color-green-500: #364E4D;
+  --color-green-600: color-mix(in srgb, #364E4D 85%, #42403F);
+  --color-green-700: color-mix(in srgb, #364E4D 70%, #42403F);
+
+  /* Amber -> Mustard (#DFAC79) */
+  --color-amber-50: color-mix(in srgb, #DFAC79 15%, #F0EFEB);
+  --color-amber-100: color-mix(in srgb, #DFAC79 25%, #F0EFEB);
+  --color-amber-400: color-mix(in srgb, #DFAC79 85%, #F0EFEB);
+  --color-amber-500: #DFAC79;
+  --color-amber-600: color-mix(in srgb, #DFAC79 85%, #42403F);
+  --color-amber-700: color-mix(in srgb, #DFAC79 70%, #42403F);
 }
 
 @layer base {
