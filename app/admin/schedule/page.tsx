@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { Modal } from "@/components/Modal";
 import { fetchAllApprovedTimeOffs } from "@/app/actions/submissions";
 
-export default function ManagerSchedule() {
+export default function AdminSchedule() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,7 +61,7 @@ export default function ManagerSchedule() {
     fetchAllApprovedTimeOffs().then(setApprovedTimeOffs);
   }, []);
 
-  if (!user) return null;
+  if (!user || user.role !== "admin") return null;
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();

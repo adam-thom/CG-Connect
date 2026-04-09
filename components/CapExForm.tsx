@@ -5,10 +5,11 @@ import { submitCapExRequest, updateCapExRequest } from '@/app/actions/capex';
 import { UploadCloud, Loader2, DollarSign, Building } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function CapExForm({ existingData, locations }: { existingData?: any, locations?: string[] }) {
+export function CapExForm({ existingData, locations, availableBudgets }: { existingData?: any, locations?: string[], availableBudgets?: { id: string, name: string, location: string }[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState('');
+  const [loc, setLoc] = useState(existingData?.location || (locations?.[0] || ''));
   
   const isEditing = !!existingData;
 
@@ -71,27 +72,46 @@ export function CapExForm({ existingData, locations }: { existingData?: any, loc
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2">Location Facility</label>
             <div className="relative">
               <Building className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <select 
                   name="location" 
-                  defaultValue={existingData?.location || ''}
+                  value={loc}
+                  onChange={e => setLoc(e.target.value)}
                   required 
                   className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium appearance-none"
               >
                   <option value="" disabled>Select location...</option>
-                  {((locations && locations.length > 0) ? locations : ['MB', 'CSG', 'EVG', 'EDENS']).map(loc => (
-                    <option key={loc} value={loc}>{loc}</option>
+                  {((locations && locations.length > 0) ? locations : ['MB', 'CSG', 'EVG', 'EDENS']).map(l => (
+                    <option key={l} value={l}>{l}</option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Budget Category</label>
+            <div className="relative">
+              <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <select 
+                  name="budgetId" 
+                  defaultValue={existingData?.budgetId || ''}
+                  required 
+                  className="w-full pl-12 pr-4 py-4 border border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:ring-2 focus:ring-[#91665b] focus:outline-none transition-all shadow-inner font-medium appearance-none"
+              >
+                  <option value="" disabled>Select budget category...</option>
+                  {availableBudgets?.filter(b => b.location === loc).map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
               </select>
             </div>
           </div>
           
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2">Total Budget Required</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2">Required Amount</label>
             <div className="relative">
               <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
               <input 

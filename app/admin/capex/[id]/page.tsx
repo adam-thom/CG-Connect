@@ -30,6 +30,8 @@ export default async function AdminCapExDetailView({ params }: { params: { id: s
 
   // Administrators have global oversight so isolation validation is intentionally omitted here natively bridging workflows.
 
+  const availableBudgets = await prisma.locationBudget.findMany();
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="mb-4">
@@ -38,7 +40,7 @@ export default async function AdminCapExDetailView({ params }: { params: { id: s
         </Link>
       </div>
       
-      <CapExDetail data={request} currentUserRole="admin" />
+      <CapExDetail data={request} currentUserRole="admin" availableBudgets={availableBudgets} />
     </div>
   );
 }

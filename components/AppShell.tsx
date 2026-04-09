@@ -11,8 +11,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (!user) return null;
 
+  const themeClass = user.role === 'admin' 
+    ? 'theme-admin' 
+    : user.role === 'manager' 
+      ? 'theme-manager' 
+      : 'theme-employee';
+
   return (
-    <div className={`min-h-screen flex transition-colors duration-500 bg-slate-50 text-slate-900 ${user.role === 'manager' ? 'manager-theme' : ''}`}>
+    <div className={`min-h-screen flex transition-colors duration-500 bg-slate-50 text-slate-900 ${themeClass}`}>
       <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
       
       <div className="flex-1 flex flex-col md:pl-64 min-w-0 transition-all duration-300 w-full overflow-x-hidden">

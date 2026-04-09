@@ -40,34 +40,34 @@ export default async function ManagerCapExDashboard() {
     );
 
   // Fetch Global Location Budgets for mgr locations
-  const globalBudgets = await prisma.locationBudget.findMany({
-    where: { location: { in: locations } }
+  const locationBudgetsDB = await prisma.locationBudget.findMany({
+    where: { location: { in: locations } },
+    orderBy: { location: 'asc' }
   });
 
   // Approved capex requests globally for assigned locations to calculate global spent
   const approvedRequests = await prisma.capExRequest.findMany({
     where: { location: { in: locations }, status: 'Approved' },
-    select: { location: true, amount: true, createdAt: true },
+    select: { location: true, budgetId: true, amount: true, createdAt: true },
   });
 
-  const spentByLocation: Record<string, number> = {};
+  const budgetSpent: Record<string, number> = {};
   for (const req of approvedRequests) {
-    const loc = req.location.toUpperCase();
-    const resetAt = globalBudgets.find(b => b.location === loc)?.lastResetAt;
+    if (!req.budgetId) continue;
+    const resetAt = locationBudgetsDB.find(b => b.id === req.budgetId)?.lastResetAt;
     
-    if (!resetAt || req.createdAt >= resetAt) {
-      spentByLocation[loc] = (spentByLocation[loc] || 0) + req.amount;
+    if (resetAt && req.createdAt >= resetAt) {
+      budgetSpent[req.budgetId] = (budgetSpent[req.budgetId] || 0) + req.amount;
     }
   }
 
-  const locationBudgets = locations.map(loc => {
-    const dbBudget = globalBudgets.find(b => b.location === loc);
-    return {
-      location: loc,
-      budget: dbBudget?.budget ?? 0,
-      spent: spentByLocation[loc] ?? 0,
-    };
-  });
+  const locationBudgets = locationBudgetsDB.map(b => ({
+      id: b.id,
+      name: b.name,
+      location: b.location,
+      budget: b.budget,
+      spent: budgetSpent[b.id] || 0,
+  }));
 
   const allRequests = await prisma.capExRequest.findMany({
     where: isDevAccount ? {} : { submitterId: session.id },
@@ -92,19 +92,30 @@ export default async function ManagerCapExDashboard() {
 
       {/* Per-location budget bars */}
       {locations.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <h2 className="font-bold text-slate-900 mb-2">Assigned Location Budgets</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {locationBudgets.map(lb => (
-              <GlobalLocationBar key={lb.location} lb={lb} readOnly />
-            ))}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            {locations.map(loc => {
+               const locBudgets = locationBudgets.filter(b => b.location === loc);
+               if (locBudgets.length === 0) return null;
+               return (
+                 <div key={loc} className="flex flex-col gap-4 bg-slate-50 border border-slate-200 p-6 rounded-3xl">
+                   <h3 className="font-bold text-slate-800 text-lg">{loc} Department Budgets</h3>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {locBudgets.map((lb) => (
+                       <GlobalLocationBar key={lb.id} lb={lb} readOnly />
+                     ))}
+                   </div>
+                 </div>
+               )
+            })}
           </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
-          <CapExForm locations={locations} />
+          <CapExForm locations={locations} availableBudgets={locationBudgetsDB} />
         </div>
 
         <div className="lg:col-span-2 space-y-4">

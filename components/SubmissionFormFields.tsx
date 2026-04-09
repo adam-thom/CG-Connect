@@ -11,7 +11,7 @@ interface SubmissionFormFieldsProps {
   isLocked: boolean;
 }
 
-const ReadOnlyField = ({ label, value, isNarrative = false }: { label: string; value: any; isNarrative?: boolean }) => (
+const ReadOnlyField = ({ label, value, isNarrative = false, required }: { label: string; value: any; isNarrative?: boolean; required?: boolean }) => (
   <div className={cn(isNarrative ? "col-span-full" : "")}>
     <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
       {label}
@@ -22,10 +22,10 @@ const ReadOnlyField = ({ label, value, isNarrative = false }: { label: string; v
   </div>
 );
 
-const EditField = ({ label, name, type = "text", value, isNarrative = false, onChange }: { label: string; name: string; type?: string; value: any; isNarrative?: boolean; onChange?: (e: any) => void }) => (
+const EditField = ({ label, name, type = "text", value, isNarrative = false, onChange, required }: { label: string; name: string; type?: string; value: any; isNarrative?: boolean; onChange?: (e: any) => void; required?: boolean }) => (
   <div className={cn(isNarrative ? "col-span-full" : "")}>
     <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase tracking-wide">
-      {label}
+      {label}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
     {isNarrative ? (
       <textarea
@@ -33,6 +33,7 @@ const EditField = ({ label, name, type = "text", value, isNarrative = false, onC
         className="w-full border border-orange-300 rounded-lg p-3 bg-orange-50 focus:ring-2 focus:ring-brand-500 text-slate-800"
         defaultValue={value || ""}
         rows={4}
+        required={required}
       />
     ) : (
       <input
@@ -41,6 +42,7 @@ const EditField = ({ label, name, type = "text", value, isNarrative = false, onC
         className="w-full border border-orange-300 rounded-lg p-3 bg-orange-50 focus:ring-2 focus:ring-brand-500 text-slate-800 font-medium"
         defaultValue={value || ""}
         onChange={onChange}
+        required={required}
       />
     )}
   </div>
@@ -114,16 +116,35 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-y-6 gap-x-8">
-            <div className="col-span-1 lg:col-span-2"><Field label="Date" name="date" type="date" value={data.date?.split('T')[0]} /></div>
-            <div className="col-span-1 lg:col-span-2"><Field label="Time of Call" name="time" type="time" value={data.time} /></div>
+            <div className="col-span-1 lg:col-span-2"><Field label="Date" name="date" type="date" value={data.date?.split('T')[0]} required /></div>
+            <div className="col-span-1 lg:col-span-2"><Field label="Time of Call" name="time" type="time" value={data.time} required /></div>
             
-            <div className="col-span-1 lg:col-span-2"><Field label="Person Calling" name="callerName" value={data.callerName} /></div>
-            <div className="col-span-1 lg:col-span-2"><Field label="Phone #" name="callerPhone" value={data.callerPhone} /></div>
+            <div className="col-span-1 lg:col-span-2"><Field label="Person Calling" name="callerName" value={data.callerName} required /></div>
+            <div className="col-span-1 lg:col-span-2"><Field label="Phone #" name="callerPhone" value={data.callerPhone} required /></div>
             
             <div className="col-span-1 lg:col-span-2">
               {isEditable && !isLocked ? (
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Funeral Director Assigning Transfer *</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase tracking-wide">Funeral Home<span className="text-red-500 ml-1">*</span></label>
+                  <select name="funeralHome" defaultValue={data.funeralHome || ''} required className="w-full border border-slate-200 rounded-lg p-3 bg-white">
+                    <option value="">-- Select --</option>
+                    <option value="MB">MB</option>
+                    <option value="CSG">CSG</option>
+                    <option value="EVG">EVG</option>
+                    <option value="EDENS CD">EDENS CD</option>
+                    <option value="EDENS PC">EDENS PC</option>
+                    <option value="EDENS FM">EDENS FM</option>
+                  </select>
+                </div>
+              ) : (
+                <ReadOnlyField label="Funeral Home" value={data.funeralHome} />
+              )}
+            </div>
+            
+            <div className="col-span-1 lg:col-span-2">
+              {isEditable && !isLocked ? (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2 uppercase tracking-wide">Funeral Director Assigning Transfer<span className="text-red-500 ml-1">*</span></label>
                   <select name="funeralDirectorAssigning" defaultValue={data.funeralDirectorAssigning || ''} required className="w-full border border-slate-200 rounded-lg p-3 bg-white">
                     <option value="">-- Select --</option>
                     {funeralDirectors.map(fd => (
@@ -136,9 +157,9 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
               )}
             </div>
             
-            <div className="col-span-1 lg:col-span-2"><Field label="Transfer Team" name="team" value={data.team} /></div>
+            <div className="col-span-1 lg:col-span-2"><Field label="Transfer Team" name="team" value={data.team} required /></div>
             
-            <Field label="Where to take the body" name="destination" value={data.destination} isNarrative />
+            <Field label="Where to take the body" name="destination" value={data.destination} isNarrative required />
           </div>
         </div>
       )}
@@ -151,14 +172,14 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
              Deceased Details
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-y-6 gap-x-8">
-            <Field label="Name of Deceased" name="deceasedName" value={data.deceasedName} />
-            <Field label="Place of Death" name="placeOfDeath" value={data.placeOfDeath} isNarrative />
+            <Field label="Name of Deceased" name="deceasedName" value={data.deceasedName} required />
+            <Field label="Place of Death" name="placeOfDeath" value={data.placeOfDeath} isNarrative required />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-8 mt-2">
-            <Field label="Age" name="deceasedAge" value={data.deceasedAge} />
-            <Field label="Sex" name="deceasedSex" value={data.deceasedSex} />
-            <Field label="D.O.B" name="deceasedDob" type="date" value={data.deceasedDob?.split('T')[0]} />
-            <Field label="D.O.D" name="deceasedDod" type="date" value={data.deceasedDod?.split('T')[0]} />
+            <Field label="Age" name="deceasedAge" value={data.deceasedAge} required />
+            <Field label="Sex" name="deceasedSex" value={data.deceasedSex} required />
+            <Field label="D.O.B" name="deceasedDob" type="date" value={data.deceasedDob?.split('T')[0]} required />
+            <Field label="D.O.D" name="deceasedDod" type="date" value={data.deceasedDod?.split('T')[0]} required />
           </div>
         </div>
       )}
@@ -172,7 +193,7 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
               Valuables
             </h3>
             <div className="flex-1 min-h-[150px] relative">
-              <Field label="Valuables/Item(s) Description" name="valuables" value={data.valuables} isNarrative />
+              <Field label="Valuables/Item(s) Description" name="valuables" value={data.valuables} isNarrative required />
             </div>
           </div>
         )}
@@ -183,9 +204,9 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
             <div className="p-6 md:p-8 border border-blue-200 rounded-2xl bg-[#eff6ff] relative z-10 space-y-6 shadow-sm flex-1">
               <h3 className="font-bold text-lg text-blue-900 flex items-center gap-2">Next of Kin</h3>
               <div className="grid grid-cols-1 gap-y-5">
-                <Field label="N.O.K Name" name="nokName" value={data.nokName} />
-                <Field label="N.O.K Phone #" name="nokContact" value={data.nokContact} />
-                <Field label="Relationship to deceased" name="nokRelation" value={data.nokRelation} />
+                <Field label="N.O.K Name" name="nokName" value={data.nokName} required />
+                <Field label="N.O.K Phone #" name="nokContact" value={data.nokContact} required />
+                <Field label="Relationship to deceased" name="nokRelation" value={data.nokRelation} required />
               </div>
             </div>
           )}
@@ -193,7 +214,7 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
           {/* Special Instructions: M.E. Only */}
           {isME && (
             <div className="p-6 border border-slate-300 rounded-2xl bg-white relative z-10 shadow-sm">
-              <Field label="Special Instructions & Conditions of Remains" name="specialInstructions" value={data.specialInstructions} isNarrative />
+              <Field label="Special Instructions & Conditions of Remains" name="specialInstructions" value={data.specialInstructions} isNarrative required />
             </div>
           )}
         </div>
@@ -204,14 +225,14 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-2">
           <div className="p-6 md:p-8 border border-slate-300 rounded-2xl bg-slate-50 shadow-sm space-y-6">
             <h3 className="font-bold text-lg text-slate-800">Medical Examiner info</h3>
-            <Field label="MEDICAL EXAMINER NAME" name="medicalExaminerName" value={data.medicalExaminerName} />
-            <Field label="DATE TO BE BROUGHT TO M.E." name="dateToME" type="date" value={data.dateToME?.split('T')[0]} />
+            <Field label="MEDICAL EXAMINER NAME" name="medicalExaminerName" value={data.medicalExaminerName} required />
+            <Field label="DATE TO BE BROUGHT TO M.E." name="dateToME" type="date" value={data.dateToME?.split('T')[0]} required />
           </div>
           
           <div className="p-6 md:p-8 border border-blue-200 rounded-2xl bg-[#eff6ff] shadow-sm space-y-6 flex flex-col justify-center">
             <h3 className="font-bold text-lg text-blue-900">Constabulary (Scene)</h3>
-            <Field label="CONS'T NAME" name="constName" value={data.constName} />
-            <Field label="CONS'T NUMBER" name="constNumber" value={data.constNumber} />
+            <Field label="CONS'T NAME" name="constName" value={data.constName} required />
+            <Field label="CONS'T NUMBER" name="constNumber" value={data.constNumber} required />
           </div>
         </div>
       ) : isPolice ? (
@@ -219,8 +240,8 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
            <div className="p-6 md:p-8 border border-blue-200 rounded-2xl bg-[#eff6ff] shadow-sm space-y-6 lg:w-1/2">
             <h3 className="font-bold text-lg text-blue-900">Constabulary (Scene)</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <Field label="CONS'T NAME" name="constName" value={data.constName} />
-              <Field label="CONS'T NUMBER" name="constNumber" value={data.constNumber} />
+              <Field label="CONS'T NAME" name="constName" value={data.constName} required />
+              <Field label="CONS'T NUMBER" name="constNumber" value={data.constNumber} required />
             </div>
           </div>
         </div>
@@ -236,15 +257,15 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
             Transport Timing & Mileage
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
-            <Field label="Time Left MB Funeral Home" name="timeLeftMB" value={data.timeLeftMB} type="time" />
-            <Field label="Arrive @ Scene" name="arriveScene" value={data.arriveScene} type="time" />
-            <Field label="Depart From Scene" name="departScene" value={data.departScene} type="time" />
-            <Field label="Arrive @ Hospital" name="arriveHospital" value={data.arriveHospital} type="time" />
+            <Field label="Left FH" name="timeLeftMB" value={data.timeLeftMB} type="time" required />
+            <Field label="Arrive @ Scene" name="arriveScene" value={data.arriveScene} type="time" required />
+            <Field label="Depart From Scene" name="departScene" value={data.departScene} type="time" required />
+            <Field label="Return to FH" name="arriveHospital" value={data.arriveHospital} type="time" required />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-y-6 gap-x-8 pt-6 border-t border-slate-200">
-            <Field label="Mileage out" name="mileageOut" value={data.mileageOut} type="number" />
-            <Field label="Mileage Return" name="mileageReturn" value={data.mileageReturn} type="number" />
-            <Field label="Total Mileage" name="totalMileage" value={data.totalMileage} type="number" />
+            <Field label="Mileage out" name="mileageOut" value={data.mileageOut} type="number" required />
+            <Field label="Mileage Return" name="mileageReturn" value={data.mileageReturn} type="number" required />
+            <Field label="Total Mileage" name="totalMileage" value={data.totalMileage} type="number" required />
           </div>
         </div>
       )}
@@ -259,14 +280,14 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
           <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
             {isEditable && !isLocked ? (
               <div className="space-y-4">
-                <label className="block text-sm font-bold text-slate-900 uppercase tracking-wide">Two Transfer Staff Approved?</label>
+                <label className="block text-sm font-bold text-slate-900 uppercase tracking-wide">Two Transfer Staff Approved?<span className="text-red-500 ml-1">*</span></label>
                 <div className="flex gap-8">
                   <label className="flex items-center gap-3 cursor-pointer group">
-                    <input type="radio" name="twoStaffApproved" value="Yes" defaultChecked={data.twoStaffApproved === 'Yes'} className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" />
+                    <input type="radio" name="twoStaffApproved" value="Yes" defaultChecked={data.twoStaffApproved === 'Yes'} className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" required />
                     <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900">Yes</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer group">
-                    <input type="radio" name="twoStaffApproved" value="No" defaultChecked={data.twoStaffApproved === 'No'} className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" />
+                    <input type="radio" name="twoStaffApproved" value="No" defaultChecked={data.twoStaffApproved === 'No'} className="w-5 h-5 text-brand-600 border-slate-300 focus:ring-brand-500" required />
                     <span className="text-sm font-semibold text-slate-700 group-hover:text-slate-900">No</span>
                   </label>
                 </div>
@@ -277,12 +298,12 @@ export function SubmissionFormFields({ type, data, isEditable, isLocked }: Submi
           </div>
           
           <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
-            <Field label="Transfer Team (Internal)" name="team" value={data.team} />
+            <Field label="Transfer Team (Internal)" name="team" value={data.team} required />
           </div>
         </div>
         
         <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm mt-4">
-          <Field label="Internal Notes" name="notes" value={data.notes} isNarrative />
+          <Field label="Internal Notes" name="notes" value={data.notes} isNarrative required />
         </div>
       </div>
     </div>

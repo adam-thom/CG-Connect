@@ -2,6 +2,7 @@ import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import { GlobalLocationBar, LOCATION_CONFIG } from '@/components/GlobalBudgetCard';
+import { AddBudgetModal } from '@/components/AddBudgetModal';
 import Link from 'next/link';
 import { FileText, Clock, ChevronRight, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,38 +21,37 @@ export default async function AdminCapExDashboard() {
   if (!user || user.role !== 'admin') redirect('/login');
 
   // Fetch Global Location Budgets
-  const locationBudgetsDB = await prisma.locationBudget.findMany();
-  
-  // Ensure exactly 4 locations exist
-  const LOCATIONS = ['MB', 'CSG', 'EVG', 'EDENS'];
-  const globalBudgets = LOCATIONS.map(loc => {
-    const b = locationBudgetsDB.find(db => db.location === loc) || { location: loc, budget: 0, lastResetAt: new Date(0) };
-    return b;
+  const locationBudgetsDB = await prisma.locationBudget.findMany({
+    orderBy: { location: 'asc' }
   });
+  
+  const LOCATIONS = ['MB', 'CSG', 'EVG', 'EDENS'];
 
   // Fetch all approved requests globally
   const approvedRequests = await prisma.capExRequest.findMany({
     where: { status: 'Approved' },
-    select: { location: true, amount: true, createdAt: true },
+    select: { location: true, budgetId: true, amount: true, createdAt: true },
   });
 
-  // Map: location -> total spent system-wide since last reset
-  const locationSpent: Record<string, number> = {};
+  // Map: budgetId -> total spent assigned to this budget
+  const budgetSpent: Record<string, number> = {};
   for (const req of approvedRequests) {
-    const loc = req.location.toUpperCase();
-    const budgetData = globalBudgets.find(b => b.location === loc);
+    if (!req.budgetId) continue;
+    const budgetData = locationBudgetsDB.find(b => b.id === req.budgetId);
     
     // Only count if request was created AFTER the last time the budget was renewed
     if (budgetData && req.createdAt >= budgetData.lastResetAt) {
-      locationSpent[loc] = (locationSpent[loc] || 0) + req.amount;
+      budgetSpent[req.budgetId] = (budgetSpent[req.budgetId] || 0) + req.amount;
     }
   }
 
   // Final payload for UI
-  const locationBudgets = globalBudgets.map(b => ({
+  const locationBudgets = locationBudgetsDB.map(b => ({
+    id: b.id,
+    name: b.name,
     location: b.location,
     budget: b.budget,
-    spent: locationSpent[b.location] || 0,
+    spent: budgetSpent[b.id] || 0,
   }));
 
   // Global request queue
@@ -97,10 +97,27 @@ export default async function AdminCapExDashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-          {locationBudgets.map((lb) => (
-            <GlobalLocationBar key={lb.location} lb={lb} />
-          ))}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {LOCATIONS.map(loc => {
+             const locBudgets = locationBudgets.filter(b => b.location === loc);
+             return (
+               <div key={loc} className="flex flex-col gap-4 bg-slate-50/50 border border-slate-200 p-6 rounded-3xl">
+                 <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-slate-800 text-lg">{loc} Department Budgets</h3>
+                    <AddBudgetModal location={loc} />
+                 </div>
+                 {locBudgets.length === 0 ? (
+                    <p className="text-sm text-slate-500 font-medium p-4 text-center bg-white rounded-xl border border-dashed border-slate-300">No active budgets mapped for {loc}.</p>
+                 ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {locBudgets.map((lb) => (
+                        <GlobalLocationBar key={lb.id} lb={lb} />
+                      ))}
+                    </div>
+                 )}
+               </div>
+             )
+          })}
         </div>
       </div>
 

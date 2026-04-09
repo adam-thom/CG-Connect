@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { Users, FolderOpen, ArrowRight, ShieldCheck } from "lucide-react";
+import { Users, FolderOpen, ArrowRight, ShieldCheck, CalendarDays } from "lucide-react";
 import Link from 'next/link';
 
 export default function AdminDashboardPage() {
@@ -25,6 +25,19 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+        <Link href="/admin/schedule" className="group bg-white rounded-[2rem] p-6 sm:p-8 border border-slate-200 shadow-sm hover:border-[#91665b]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[220px]">
+           <div>
+              <div className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">
+                 <CalendarDays className="w-6 h-6 sm:w-7 sm:h-7" />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">Company Schedule</h2>
+              <p className="text-sm sm:text-base text-slate-500 line-clamp-2 sm:line-clamp-3 leading-relaxed">View and assign roles across the facility matrix to ensure full operational coverage globally.</p>
+           </div>
+           
+           <div className="flex items-center text-[#91665b] text-sm sm:text-base font-bold mt-6 sm:mt-8 pt-4 border-t border-slate-100">
+              Manage Schedule <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" />
+           </div>
+        </Link>
         <Link href="/admin/users" className="group bg-white rounded-[2rem] p-6 sm:p-8 border border-slate-200 shadow-sm hover:border-[#91665b]/30 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between min-h-[220px]">
            <div>
               <div className="w-12 h-12 sm:w-14 sm:h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 group-hover:scale-110 transition-transform">

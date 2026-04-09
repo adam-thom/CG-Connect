@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { CapExForm } from './CapExForm';
 
-export function CapExDetail({ data, currentUserRole, validLocations }: { data: any; currentUserRole: string; validLocations?: string[] }) {
+export function CapExDetail({ data, currentUserRole, validLocations, availableBudgets }: { data: any; currentUserRole: string; validLocations?: string[]; availableBudgets?: { id: string; name: string; location: string }[] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [comment, setComment] = useState("");
@@ -18,6 +18,7 @@ export function CapExDetail({ data, currentUserRole, validLocations }: { data: a
   const isEditable = isManager && (data.status === 'Pending' || data.status === 'Revision Requested');
 
   const quotes = data.quotes ? JSON.parse(data.quotes) : [];
+  const budgetName = availableBudgets?.find(b => b.id === data.budgetId)?.name || 'General';
 
   const handleStatusUpdate = (newStatus: string) => {
     startTransition(async () => {
@@ -66,10 +67,14 @@ export function CapExDetail({ data, currentUserRole, validLocations }: { data: a
                 <Building className="w-4 h-4" /> Submitted by <span className="text-slate-700 font-bold">{data.submitter?.name}</span>
              </p>
 
-             <div className="grid grid-cols-2 gap-8 mb-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8 bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
                  <div>
                     <span className="block text-xs font-bold text-slate-400 tracking-wider mb-2">TARGET LOCATION</span>
                     <span className="font-bold text-slate-800 flex items-center gap-2 text-lg"><MapPin className="w-5 h-5 text-[#91665b]"/> {data.location}</span>
+                 </div>
+                 <div>
+                    <span className="block text-xs font-bold text-slate-400 tracking-wider mb-2">BUDGET CATEGORY</span>
+                    <span className="font-bold text-slate-800 flex items-center gap-2 text-lg">{budgetName}</span>
                  </div>
                  <div>
                     <span className="block text-xs font-bold text-slate-400 tracking-wider mb-2">EXPENDITURE AMOUNT</span>
@@ -132,7 +137,7 @@ export function CapExDetail({ data, currentUserRole, validLocations }: { data: a
       
       {isEditable && (
         <div className="mb-8">
-            <CapExForm existingData={data} locations={validLocations} />
+            <CapExForm existingData={data} locations={validLocations} availableBudgets={availableBudgets} />
         </div>
       )}
 

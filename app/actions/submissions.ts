@@ -9,8 +9,11 @@ import { redirect } from 'next/navigation';
 // Convention: DB stores UPPERCASE ("PENDING", "APPROVED", "REVISION-REQUIRED")
 //             App/UI uses lowercase ("pending", "approved", "revision-required")
 // =========================================================================
+// =========================================================================
 const toDbStatus = (s: string) => s.toUpperCase();
 const toAppStatus = (s: string) => s.toLowerCase();
+
+import { createNotification, notifyManagersByTags } from './notifications';
 
 // =========================================================================
 // FORM SUBMISSION (Employee)
@@ -162,6 +165,15 @@ export async function submitFormAction(formType: string, prevState: any, formDat
         }
       });
     }
+
+    // Trigger manager notifications behind the scenes
+    await notifyManagersByTags(
+      Array.from(targetTagNames), 
+      'New Form Submission', 
+      `${user.name || user.email} submitted a new ${formType} record.`,
+      `/manager/submissions`
+    );
+
   } catch (error) {
     console.error('Submission Error:', error);
     return { 
@@ -436,6 +448,54 @@ export async function addComment(submissionId: string, type: string, content: st
     include: { author: { select: { name: true, email: true, role: true } } }
   });
 
+  // DISPATCH NOTIFICATIONS LOGIC
+  // We need to fetch the underlying submission to know WHO to notify
+  try {
+    let submitterId: string | null = null;
+    let assignedTags: string[] = [];
+
+    if (type === 'timesheet') {
+       const rec = await prisma.timesheet.findUnique({ where: { id: submissionId }, include: { assignedTags: true }});
+       if(rec) { submitterId = rec.submitterId; assignedTags = rec.assignedTags.map(t => t.name); }
+    } else if (type === 'transfer') {
+       const rec = await prisma.transferRecord.findUnique({ where: { id: submissionId }, include: { assignedTags: true }});
+       if(rec) { submitterId = rec.submitterId; assignedTags = rec.assignedTags.map(t => t.name); }
+    } else if (type === 'incident') {
+       const rec = await prisma.incidentReport.findUnique({ where: { id: submissionId }, include: { assignedTags: true }});
+       if(rec) { submitterId = rec.submitterId; assignedTags = rec.assignedTags.map(t => t.name); }
+    } else if (type === 'time-off') {
+       const rec = await prisma.timeOffRequest.findUnique({ where: { id: submissionId }, include: { assignedTags: true }});
+       if(rec) { submitterId = rec.submitterId; assignedTags = rec.assignedTags.map(t => t.name); }
+    } else if (type === 'snow-log') {
+       const rec = await prisma.snowRemovalLog.findUnique({ where: { id: submissionId }, include: { assignedTags: true }});
+       if(rec) { submitterId = rec.submitterId; assignedTags = rec.assignedTags.map(t => t.name); }
+    }
+
+    if (submitterId) {
+      if (user.id === submitterId) {
+         // Submitter is commenting, notify managers
+         if (assignedTags.length > 0) {
+           await notifyManagersByTags(
+             assignedTags, 
+             'New Reply Added', 
+             `${user.name || user.email} replied on their ${type} record.`,
+             `/manager/submissions/${submissionId}`
+           );
+         }
+      } else {
+         // Manager is commenting, notify submitter
+         await createNotification(
+           submitterId,
+           'New Feedback Received',
+           `A manager has left feedback on your ${type} record.`,
+           `/employee/submissions/my-history`
+         );
+      }
+    }
+  } catch (err) {
+    console.error("Error dispatching comment notification", err);
+  }
+
   return serializeComment(comment);
 }
 
@@ -595,6 +655,19 @@ export async function updateSubmissionStatus(id: string, type: string, newStatus
     throw new Error('Unauthorized');
   }
 
+  // Strict Backend Role Validations
+  if (user.role !== 'admin') {
+    const userTagNames = user.tags?.map((t: any) => t.name.toUpperCase()) || [];
+    const hasTag = (tag: string) => userTagNames.includes(tag.toUpperCase());
+
+    if (type === 'transfer' && !hasTag('TRANSFER MANAGER')) {
+      throw new Error('Only the Transfer Manager can sign off on this record');
+    }
+    if ((type === 'incident' || type === 'snow-log') && !hasTag('OHS MANAGER')) {
+      throw new Error('Only the OHS Manager can sign off on this record');
+    }
+  }
+
   const dbStatus = toDbStatus(newStatus);
 
   switch (type) {
@@ -610,6 +683,38 @@ export async function updateSubmissionStatus(id: string, type: string, newStatus
       await prisma.snowRemovalLog.update({ where: { id }, data: { status: dbStatus } }); break;
     default:
       throw new Error('Invalid submission type');
+  }
+
+  // Find out who to notify
+  try {
+     let submitterId: string | null = null;
+     if (type === 'timesheet') {
+       const rec = await prisma.timesheet.findUnique({ where: { id }});
+       if(rec) submitterId = rec.submitterId;
+     } else if (type === 'transfer') {
+       const rec = await prisma.transferRecord.findUnique({ where: { id }});
+       if(rec) submitterId = rec.submitterId;
+     } else if (type === 'incident') {
+       const rec = await prisma.incidentReport.findUnique({ where: { id }});
+       if(rec) submitterId = rec.submitterId;
+     } else if (type === 'time-off') {
+       const rec = await prisma.timeOffRequest.findUnique({ where: { id }});
+       if(rec) submitterId = rec.submitterId;
+     } else if (type === 'snow-log') {
+       const rec = await prisma.snowRemovalLog.findUnique({ where: { id }});
+       if(rec) submitterId = rec.submitterId;
+     }
+
+     if (submitterId) {
+       await createNotification(
+         submitterId,
+         'Status Update',
+         `Your ${type} record is now ${dbStatus}.`,
+         `/employee/submissions/my-history`
+       );
+     }
+  } catch (e) {
+     console.error("Failed to notify submitter of status change", e)
   }
 
   return { success: true, newStatus: toAppStatus(dbStatus) };

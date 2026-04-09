@@ -38,6 +38,10 @@ model User {
 
   capExRequests        CapExRequest[] @relation("CapExSubmitter")
 
+  transferDraft String?
+
+  notifications Notification[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -160,6 +164,7 @@ model TransferRecord {
   
   callerName       String?
   callerPhone      String?
+  funeralHome      String?
   funeralDirectorAssigning String? // Display string / id reference if needed
   destination      String? // Where to take the body
   deceasedName     String?
@@ -262,6 +267,7 @@ model CapExRequest {
 
   projectName String
   location    String
+  budgetId    String?
   amount      Float
   quotes      String 
 
@@ -274,7 +280,8 @@ model CapExRequest {
 
 model LocationBudget {
   id          String   @id @default(cuid())
-  location    String   @unique // "MB", "CSG", "EVG", "EDENS"
+  name        String   @default("General")
+  location    String   // "MB", "CSG", "EVG", "EDENS"
   budget      Float    @default(0)
   lastResetAt DateTime @default(now())
 
@@ -300,6 +307,20 @@ model SnowRemovalLog {
   status   String    @default("PENDING")
   comments Comment[]
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  title     String
+  message   String
+  href      String?
+  read      Boolean  @default(false)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
-import { setLocationBudget, resetLocationBudget } from '@/app/actions/capex';
-import { Edit3, Check, Loader2, X, RefreshCcw, Activity } from 'lucide-react';
+import { setLocationBudget, resetLocationBudget, deleteLocationBudget } from '@/app/actions/capex';
+import { Edit3, Check, Loader2, X, RefreshCcw, Activity, Trash2 } from 'lucide-react';
 
 export const LOCATION_CONFIG: Record<string, { label: string; bar: string; bg: string; text: string; ring: string }> = {
   MB:    { label: 'MB',    bar: 'bg-[#2f9aad]', bg: 'bg-[#2f9aad]/10', text: 'text-[#0d7f94]', ring: 'focus:ring-[#2f9aad]' },
@@ -12,6 +12,8 @@ export const LOCATION_CONFIG: Record<string, { label: string; bar: string; bg: s
 };
 
 export interface LocationBudget {
+  id: string;
+  name: string;
   location: string;
   budget: number;
   spent: number;
@@ -30,7 +32,7 @@ export function GlobalLocationBar({ lb, readOnly = false }: { lb: LocationBudget
     const val = parseFloat(input);
     if (isNaN(val) || val < 0) return;
     startTransition(async () => {
-      await setLocationBudget(lb.location, val);
+      await setLocationBudget(lb.id, val);
       setEditing(false);
     });
   };
@@ -38,7 +40,14 @@ export function GlobalLocationBar({ lb, readOnly = false }: { lb: LocationBudget
   const handleReset = () => {
     if (!confirm('Are you sure you want to renew this budget? This will refill the bar to maximum and ignore past approved requests.')) return;
     startTransition(async () => {
-      await resetLocationBudget(lb.location);
+      await resetLocationBudget(lb.id);
+    });
+  };
+
+  const handleDelete = () => {
+    if (!confirm('Are you sure you want to completely delete this budget? All related CapEx requests will lose their category association.')) return;
+    startTransition(async () => {
+      await deleteLocationBudget(lb.id);
     });
   };
 
@@ -50,7 +59,7 @@ export function GlobalLocationBar({ lb, readOnly = false }: { lb: LocationBudget
             {cfg.label}
           </div>
           <div>
-            <h3 className="font-bold text-sm sm:text-base text-slate-900 leading-tight">Global Facility Budget</h3>
+            <h3 className="font-bold text-sm sm:text-base text-slate-900 leading-tight">{lb.name}</h3>
             <p className="text-[10px] sm:text-xs font-semibold text-slate-500 mt-0.5">
               ${lb.spent.toLocaleString(undefined, { maximumFractionDigits: 0 })} physically spent
             </p>
@@ -101,10 +110,17 @@ export function GlobalLocationBar({ lb, readOnly = false }: { lb: LocationBudget
                     </button>
                     <button
                       onClick={handleReset}
-                      className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500 hover:border-red-500 bg-white border border-slate-200 rounded-lg transition-all shadow-sm hover:shadow"
+                      className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-[#2f9aad] hover:border-[#2f9aad] bg-white border border-slate-200 rounded-lg transition-all shadow-sm hover:shadow"
                       title="Renew Budget"
                     >
                       <RefreshCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-500 hover:border-red-500 bg-white border border-slate-200 rounded-lg transition-all shadow-sm hover:shadow"
+                      title="Delete Budget"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
                 </>

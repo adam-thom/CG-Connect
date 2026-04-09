@@ -1,11 +1,12 @@
 "use client";
 
 import { useAuth } from '@/lib/auth-context';
-import { Search, Bell, LogOut, Loader2, Menu } from 'lucide-react';
+import { Search, LogOut, Loader2, Menu } from 'lucide-react';
 import { logoutAction } from '@/app/actions/auth';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTransition } from 'react';
 import { switchDevRole } from '@/app/actions/dev';
+import { NotificationBell } from './NotificationBell';
 
 export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
   const { user } = useAuth();
@@ -73,10 +74,7 @@ export function TopBar({ onMenuClick }: { onMenuClick?: () => void }) {
           </div>
         )}
 
-        <button className="text-slate-400 hover:text-brand-900 relative p-1 transition-colors rounded-full hover:bg-slate-50">
-          <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-accent-500 ring-2 ring-white" />
-          <Bell className="w-5 h-5" />
-        </button>
+        <NotificationBell />
 
         <div className="h-6 w-px bg-slate-200 mx-1"></div>
 

@@ -2,9 +2,10 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { useState, use, useEffect, useActionState } from "react";
+import { useState, use, useEffect, useActionState, useRef } from "react";
 import { submitFormAction } from "@/app/actions/submissions";
 import { fetchFuneralDirectors } from "@/app/actions/users";
+import { saveTransferDraft, getTransferDraft } from "@/app/actions/drafts";
 import { 
   Clock, 
   Activity, 
@@ -41,6 +42,62 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
       }
     }
   }, [state.success, router]);
+
+  const formRef = useRef<HTMLFormElement>(null);
+  const [draftExists, setDraftExists] = useState(false);
+  const [draftStatus, setDraftStatus] = useState("");
+
+  useEffect(() => {
+    if (params.type === 'transfer') {
+      getTransferDraft().then(d => {
+        if (d) setDraftExists(true);
+      });
+    }
+  }, [params.type]);
+
+  const handleReviewDraft = async () => {
+    const d = await getTransferDraft();
+    if (d) {
+      if (d.transferType) setTransferType(d.transferType);
+      
+      setTimeout(() => {
+        if (!formRef.current) return;
+        const elements = formRef.current.elements as HTMLFormControlsCollection;
+        for (const [key, val] of Object.entries(d)) {
+          const el = elements.namedItem(key) as any;
+          if (!el) continue;
+          if (el instanceof RadioNodeList) {
+             for(let i=0; i<el.length; i++) {
+               if((el[i] as HTMLInputElement).value === val) (el[i] as HTMLInputElement).checked = true;
+             }
+          } else if (el.type === 'radio' || el.type === 'checkbox') {
+             el.checked = (val === el.value || val === 'Yes' || val === true);
+          } else {
+            el.value = val;
+          }
+        }
+      }, 50); // slight delay for transferType select state mapping
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (draftExists) {
+      if (!window.confirm("Saving this draft will replace your previous draft. Are you sure you want to save?")) return;
+    }
+    if (!formRef.current) return;
+    const formData = new FormData(formRef.current);
+    
+    setDraftStatus("Saving draft...");
+    const res = await saveTransferDraft(formData);
+    if (res?.success) {
+      setDraftStatus("Draft saved!");
+      setDraftExists(true);
+      setTimeout(() => setDraftStatus(""), 3000);
+    } else {
+      setDraftStatus("Error saving draft.");
+      setTimeout(() => setDraftStatus(""), 3000);
+    }
+  };
 
   if (!user) return null;
 
@@ -159,6 +216,19 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
             <div className="col-span-1 lg:col-span-2">
               <label className="block text-sm font-medium text-slate-700 mb-2">Phone #</label>
               <input type="tel" name="callerPhone" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+            </div>
+            
+            <div className="col-span-1 lg:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">Funeral Home *</label>
+              <select name="funeralHome" required className="w-full border border-slate-200 rounded-lg p-3 bg-white">
+                <option value="">-- Select --</option>
+                <option value="MB">MB</option>
+                <option value="CSG">CSG</option>
+                <option value="EVG">EVG</option>
+                <option value="EDENS CD">EDENS CD</option>
+                <option value="EDENS PC">EDENS PC</option>
+                <option value="EDENS FM">EDENS FM</option>
+              </select>
             </div>
             
             <div className="col-span-1 lg:col-span-2">
@@ -325,7 +395,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
           </h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Time Left MB</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Left FH</label>
               <input type="time" name="timeLeftMB" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
             </div>
             <div>
@@ -337,7 +407,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
               <input type="time" name="departScene" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Arrive @ Hospital</label>
+              <label className="block text-sm font-medium text-slate-700 mb-2">Return to FH</label>
               <input type="time" name="arriveHospital" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
             </div>
           </div>
@@ -576,12 +646,22 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
 
   return (
     <div className="max-w-3xl mx-auto pb-16 animate-in fade-in duration-500">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-brand-900 tracking-tight">{getTitle()}</h1>
-        <p className="text-slate-500 mt-2 text-lg">Complete any applicable fields below to submit to management.</p>
+      <div className="mb-8 flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div>
+          <h1 className="text-3xl font-bold text-brand-900 tracking-tight">{getTitle()}</h1>
+          <p className="text-slate-500 mt-2 text-lg">Complete any applicable fields below to submit to management.</p>
+        </div>
+        {params.type === 'transfer' && draftExists && (
+          <button 
+            onClick={handleReviewDraft} 
+            className="shrink-0 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-brand-900 font-bold rounded-xl transition-colors border border-slate-300 shadow-sm"
+          >
+            Review Draft
+          </button>
+        )}
       </div>
 
-      <form action={formAction} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <form ref={formRef} action={formAction} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {state.error && (
             <div className="bg-red-50 p-4 border-b border-red-200 text-red-600 text-sm font-bold">
                {state.error}
@@ -592,11 +672,25 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
           {getFormContent()}
         </div>
 
-        <div className="p-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div className="p-6 bg-slate-50 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-4">
           <button type="button" onClick={() => router.back()} disabled={isPending} className="text-slate-500 font-semibold px-5 py-2.5 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50">
             Cancel
           </button>
-          <div className="flex items-center gap-3">
+          
+          <div className="flex items-center gap-4">
+            {draftStatus && <span className="text-sm font-bold text-brand-600 animate-pulse">{draftStatus}</span>}
+            
+            {params.type === 'transfer' && (
+              <button 
+                type="button" 
+                onClick={handleSaveDraft} 
+                disabled={isPending} 
+                className="flex items-center gap-2 text-brand-900 font-bold px-6 py-3 bg-brand-50 border-2 border-brand-200 rounded-xl hover:bg-brand-100 transition-colors shadow-sm disabled:opacity-50"
+              >
+                Save Draft
+              </button>
+            )}
+
             <button type="submit" disabled={isPending} className="flex items-center gap-2 text-white font-semibold px-8 py-3 bg-brand-900 rounded-xl hover:bg-brand-800 transition-colors shadow-md hover:shadow-lg transform active:scale-95 duration-150 disabled:opacity-50">
               <Send className="w-5 h-5" /> {isPending ? "Submitting securely..." : "Submit Record"}
             </button>

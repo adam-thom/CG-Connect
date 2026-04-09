@@ -1,8 +1,77 @@
 @import "tailwindcss";
 
+@layer base {
+  :root {
+    --brand-50: #fdf5f3;
+    --brand-100: #fbe8e4;
+    --brand-200: #dac6b4;
+    --brand-300: #c5a79c;
+    --brand-400: #c0836b;
+    --brand-500: #c0836b;
+    --brand-600: #c9714e;
+    --brand-700: #91665b;
+    --brand-800: #91665b;
+    --brand-900: #674840;
+    --brand-950: #242728;
+    --brand-contrast: #ffffff;
+  }
+  
+  .theme-employee {
+    --brand-50: #F5EFEB;
+    --brand-100: #EADFDB;
+    --brand-200: #D6BEB7;
+    --brand-300: #C19C91;
+    --brand-400: #A16D5F;
+    --brand-500: #9B5D4E;
+    --brand-600: #814A3E;
+    --brand-700: #673A30;
+    --brand-800: #4B2A23;
+    --brand-900: #361F1A;
+    --brand-950: #1B0F0D;
+    --brand-contrast: #ffffff;
+  }
+  
+  .theme-manager {
+    --brand-50: #F8F2EF;
+    --brand-100: #F0E3DE;
+    --brand-200: #E0C5BA;
+    --brand-300: #D0A796;
+    --brand-400: #C38B76;
+    --brand-500: #BC7E69;
+    --brand-600: #9C6654;
+    --brand-700: #7E5142;
+    --brand-800: #5F3C31;
+    --brand-900: #432B23;
+    --brand-950: #211511;
+    --brand-contrast: #ffffff;
+  }
+  
+  .theme-admin {
+    --brand-50: #FAECE9;
+    --brand-100: #EEDBD6;
+    --brand-200: #DFCCC7;
+    --brand-300: #D1B8B0;
+    --brand-400: #CCAFA7;
+    --brand-500: #C8A69E;
+    --brand-600: #A68A83;
+    --brand-700: #856E69;
+    --brand-800: #63524E;
+    --brand-900: #423734;
+    --brand-950: #211B1A;
+    --brand-contrast: #364E4D;
+  }
+
+  /* Admin Theme override for text legibility on Brand backgrounds */
+  .theme-admin .bg-brand-500.text-white,
+  .theme-admin .bg-brand-600.text-white,
+  .theme-admin .bg-brand-900.text-white {
+    color: var(--color-brand-contrast) !important;
+  }
+}
+
 @theme {
-  /* Slate Scale - Overridden using User's Cream (#f3f2ed) and Slate Gray (#6e7c84) */
-  --color-slate-50: #f3f2ed;
+  /* Slate Scale - Using Image Colors */
+  --color-slate-50: #F0EFEB;
   --color-slate-100: #e8e6df;
   --color-slate-200: #dcd9cf;
   --color-slate-300: #d1cfc8;
@@ -10,54 +79,35 @@
   --color-slate-500: #929ba1;
   --color-slate-600: #748085;
   --color-slate-700: #727b82;
-  --color-slate-800: #303335;
-  --color-slate-900: #1f2223;
-  --color-slate-950: #1e2428;
+  --color-slate-800: #515050;
+  --color-slate-900: #42403F;
+  --color-slate-950: #201f1f;
 
-  /* Brand Scale - Using User's Peach (#e3c3b0) and Terracotta (#d87c61) */
-  --color-brand-50: #fdf5f3;
-  --color-brand-100: #fbe8e4;
-  --color-brand-200: #dac6b4;
-  --color-brand-300: #c5a79c;
-  --color-brand-400: #c0836b;
-  --color-brand-500: #c0836b;
-  --color-brand-600: #c9714e;
-  --color-brand-700: #91665b;
-  --color-brand-800: #91665b;
-  --color-brand-900: #674840;
-  --color-brand-950: #242728;
+  /* Brand Scale - dynamically mapped */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+  --color-brand-contrast: var(--brand-contrast);
 
+  /* Accents */
   --color-accent-100: #e4ecee;
   --color-accent-200: #b8cdd2;
-  --color-accent-500: #3d6068;
-  --color-accent-600: #2b3c41;
-  --color-accent-700: #1e2c30;
+  --color-accent-500: #364E4D;
+  --color-accent-600: #243534;
+  --color-accent-700: #141f1e;
 
   --color-status-pending: #E5A877;
   --color-status-revision: #E5A877;
   --color-status-finalized: #2f9aad;
   --color-status-approved: #0d7f94;
-}
-
-/* 
- * Dynamic Role-Based Theme 
- * Magically inverts all structural elements (white/slate) 
- * to the dark slate gray palette when the manager role is active.
- * Replaces the previous dark red layout.
- */
-.manager-theme {
-  --color-white: var(--color-slate-900);
-  --color-slate-50: var(--color-slate-950);
-  --color-slate-100: var(--color-slate-800);
-  --color-slate-200: var(--color-slate-700);
-  --color-slate-300: var(--color-slate-600);
-  --color-slate-400: var(--color-slate-500);
-  --color-slate-500: var(--color-slate-400);
-  --color-slate-600: var(--color-slate-300);
-  --color-slate-700: var(--color-slate-200);
-  --color-slate-800: var(--color-slate-100);
-  --color-slate-900: var(--color-slate-50);
-  --color-slate-950: var(--color-white);
 }
 
 @layer base {

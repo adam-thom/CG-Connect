@@ -47,6 +47,11 @@ export default async function ManagerCapExDetailView({ params }: { params: { id:
     )
   );
 
+  const availableBudgets = await prisma.locationBudget.findMany({
+    where: { location: { in: validLocations } },
+    orderBy: { location: 'asc' }
+  });
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       <div className="mb-4">
@@ -55,7 +60,7 @@ export default async function ManagerCapExDetailView({ params }: { params: { id:
         </Link>
       </div>
       
-      <CapExDetail data={request} currentUserRole="manager" validLocations={validLocations} />
+      <CapExDetail data={request} currentUserRole="manager" validLocations={validLocations} availableBudgets={availableBudgets} />
     </div>
   );
 }

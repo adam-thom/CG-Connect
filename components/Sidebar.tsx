@@ -49,15 +49,18 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
     { name: 'Capital Expenditures', href: '/manager/capex', icon: Wallet },
     { name: 'Document Vault', href: '/manager/docs', icon: FolderOpen },
     { name: 'Notifications', href: '/notifications', icon: Bell },
+    { name: 'My Profile', href: '/manager/profile', icon: UserIcon },
   ];
 
   const adminLinks = [
     { name: 'Admin Console', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Company Schedule', href: '/admin/schedule', icon: CalendarDays },
     { name: 'Staff Directory', href: '/admin/users', icon: Users },
     { name: 'Master Queue', href: '/admin/submissions', icon: FileText },
     { name: 'Document Control', href: '/admin/docs', icon: FolderOpen },
     { name: 'CapEx Oversight', href: '/admin/capex', icon: Wallet },
     { name: 'Notifications', href: '/notifications', icon: Bell },
+    { name: 'My Profile', href: '/admin/profile', icon: UserIcon },
   ];
 
   const links = isAdmin ? adminLinks : isManager ? managerLinks : employeeLinks;
@@ -110,7 +113,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
       </div>
 
       <div className="p-4 border-t border-slate-100 bg-slate-50/50">
-        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+        <Link href={`/${user.role}/profile`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
           <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold shrink-0 border border-brand-200">
             {user.name.charAt(0)}
           </div>
@@ -118,7 +121,7 @@ export function Sidebar({ isOpen, onClose }: { isOpen?: boolean; onClose?: () =>
             <p className="text-sm font-semibold text-slate-900 truncate">{user.name}</p>
             <p className="text-xs text-brand-700 font-medium truncate">{user.title}</p>
           </div>
-        </div>
+        </Link>
       </div>
       <NewSubmissionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </aside>
