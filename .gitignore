@@ -45,3 +45,11 @@ next-env.d.ts
 *.db-journal
 
 /src/generated/prisma
+
+# Uploaded media (news featured images)
+/public/uploads
+
+# Brand photography source library — 186MB of full-resolution stills that the
+# app does not serve. The one image the login page uses is committed explicitly.
+/public/Brand Photos/*
+!/public/Brand Photos/095A1178.webp

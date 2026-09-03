@@ -5,7 +5,14 @@ import { updateUserAction, adminPasswordResetAction, fetchTagsByCategory, fetchU
 import { UserCheck, ArrowRight, ShieldAlert, Tag, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+export default function EditUserPage({
+  params,
+}: {
+  // `params` is a Promise in this version of Next. Typing it as a plain
+  // object compiles but invites reading `.id` off the Promise, which
+  // yields undefined at runtime.
+  params: Promise<{ id: string }>;
+}) {
   const [updateState, updateAction, isUpdating] = useActionState(updateUserAction, undefined);
   const [pwState, pwAction, isResetting] = useActionState(adminPasswordResetAction, undefined);
 
@@ -41,13 +48,13 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
   }
 
   if (!user) {
-    return <div className="p-20 text-center text-red-500 font-bold">User profile could not be securely located!</div>;
+    return <div className="p-20 text-center text-status-error font-bold">We could not find that staff member.</div>;
   }
 
   const assignedTagIds = user.tags?.map((t: any) => t.id) || [];
 
   return (
-    <div className="max-w-5xl mx-auto py-12 animate-in fade-in duration-500 space-y-8">
+    <div className="max-w-5xl mx-auto py-12 animate-in fade-in duration-300 space-y-8 ease-cg">
        <div className="mb-2">
           <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">
              <Link href="/admin/dashboard" className="hover:text-slate-800 transition-colors">PORTAL</Link> 
@@ -71,19 +78,19 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
              <div className="space-y-6">
                  <div className="flex items-center gap-2 mb-6">
                     <UserCheck className="w-5 h-5 text-brand-500" />
-                    <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-2 flex-grow">Profile Basics</h3>
+                    <h3 className="text-slate-900 border-b border-slate-100 pb-2 flex-grow">About them</h3>
                  </div>
 
                  <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">FULL NAME</label>
                     <input type="text" name="name" required disabled={isUpdating} defaultValue={user.name}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-600 transition-all font-medium text-slate-900" />
                  </div>
                  
                  <div className="grid grid-cols-2 gap-4">
                      <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-2">NETWORK ROLE</label>
-                        <select name="role" required disabled={isUpdating} defaultValue={user.role} className="w-full px-4 py-3 border-r-8 border-transparent bg-slate-50 border-y border-x border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900 cursor-pointer capitalize">
+                        <label className="block text-sm font-bold text-slate-700 mb-2">ROLE</label>
+                        <select name="role" required disabled={isUpdating} defaultValue={user.role} className="w-full px-4 py-3 border-r-8 border-transparent bg-slate-50 border-y border-x border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-600 transition-all font-medium text-slate-900 cursor-pointer capitalize">
                            <option value="employee">Employee</option>
                            <option value="manager">Manager</option>
                            <option value="admin">Admin</option>
@@ -92,39 +99,39 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                      <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">DEPARTMENT</label>
                         <input type="text" name="department" disabled={isUpdating} defaultValue={user.department}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-600 transition-all font-medium text-slate-900" />
                      </div>
                  </div>
 
                  <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">JOB TITLE</label>
                     <input type="text" name="title" disabled={isUpdating} defaultValue={user.title}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-600 transition-all font-medium text-slate-900" />
                  </div>
                  
                  <div>
                     <label className="block text-sm font-bold text-slate-700 mb-2">EMAIL IDENTIFIER</label>
                     <input type="email" name="email" required disabled={isUpdating} defaultValue={user.email}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#A7705B]/30 focus:border-[#A7705B] transition-all font-medium text-slate-900" />
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-600 transition-all font-medium text-slate-900" />
                  </div>
              </div>
 
              {/* Dynamic Tag Matrix */}
              <div className="space-y-6 lg:border-l border-slate-100 lg:pl-12">
                  <div className="flex items-center gap-2 mb-6">
-                    <Tag className="w-5 h-5 text-indigo-500" />
-                    <h3 className="font-bold text-slate-900 border-b border-slate-100 pb-2 flex-grow">Routing Tags Matrix</h3>
+                    <Tag className="w-5 h-5 text-accent-on-surface" />
+                    <h3 className="text-slate-900 border-b border-slate-100 pb-2 flex-grow">Tags</h3>
                  </div>
 
                  {/* Employee Tags */}
                  {tags.employee.length > 0 && (
                      <div className="mb-6">
-                        <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Employee Routing</h4>
+                        <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Employee tags</h4>
                         <div className="grid grid-cols-2 gap-2">
                            {tags.employee.map(t => (
-                              <label key={t.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 cursor-pointer transition-colors group">
-                                 <input type="checkbox" name="tags" value={t.id} defaultChecked={assignedTagIds.includes(t.id)} className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 pointer-events-none" />
-                                 <span className="text-sm font-bold text-slate-700 group-hover:text-indigo-900 capitalize leading-none">{t.name}</span>
+                              <label key={t.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-ui-border hover:bg-brand-100/50 cursor-pointer transition-colors group">
+                                 <input type="checkbox" name="tags" value={t.id} defaultChecked={assignedTagIds.includes(t.id)} className="w-4 h-4 text-accent-on-surface rounded border-slate-300 focus:ring-accent/30 pointer-events-none" />
+                                 <span className="text-sm font-bold text-slate-700 group-hover:text-accent-on-surface capitalize leading-none">{t.name}</span>
                               </label>
                            ))}
                         </div>
@@ -134,12 +141,12 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                  {/* Manager Tags */}
                  {tags.manager.length > 0 && (
                      <div className="mb-6">
-                        <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Manager Scope</h4>
+                        <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Manager tags</h4>
                         <div className="grid grid-cols-2 gap-2">
                            {tags.manager.map(t => (
-                              <label key={t.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-amber-300 hover:bg-amber-50/50 cursor-pointer transition-colors group">
-                                 <input type="checkbox" name="tags" value={t.id} defaultChecked={assignedTagIds.includes(t.id)} className="w-4 h-4 text-amber-600 rounded border-slate-300 focus:ring-amber-500 pointer-events-none" />
-                                 <span className="text-sm font-bold text-slate-700 group-hover:text-amber-900 capitalize leading-none">{t.name}</span>
+                              <label key={t.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-status-warning/30 hover:bg-status-warning-soft/50 cursor-pointer transition-colors group">
+                                 <input type="checkbox" name="tags" value={t.id} defaultChecked={assignedTagIds.includes(t.id)} className="w-4 h-4 text-status-warning rounded border-slate-300 focus:ring-status-warning/30 pointer-events-none" />
+                                 <span className="text-sm font-bold text-slate-700 group-hover:text-status-warning capitalize leading-none">{t.name}</span>
                               </label>
                            ))}
                         </div>
@@ -149,7 +156,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
                  {/* Additional Tags */}
                  {tags.additional.length > 0 && (
                      <div className="mb-6">
-                        <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">System Groups</h4>
+                        <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Other groups</h4>
                         <div className="grid grid-cols-2 gap-2">
                            {tags.additional.map(t => (
                               <label key={t.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 cursor-pointer transition-colors group">
@@ -164,13 +171,13 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
           </div>
 
           {updateState?.error && (
-            <div className="relative z-10 mt-8 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 font-semibold text-sm">
+            <div className="relative z-10 mt-8 p-4 bg-status-error-soft border border-status-error/30 rounded-xl text-status-error font-semibold text-sm">
                Error: {updateState.error}
             </div>
           )}
 
           <div className="relative z-10 mt-10 pt-8 border-t border-slate-100 flex items-center justify-end gap-4">
-               <button type="submit" disabled={isUpdating} className="bg-[#A7705B] hover:bg-[#8B5A44] disabled:opacity-50 text-white px-8 py-3.5 rounded-full font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2 group justify-center">
+               <button type="submit" disabled={isUpdating} className="bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white px-8 py-3.5 rounded-full font-bold shadow-sm transition-all active:scale-95 flex items-center gap-2 group justify-center">
                  {isUpdating ? 'Saving Framework...' : 'Commit Configuration Changes'}
                  {!isUpdating && <Save className="w-5 h-5" />}
                </button>
@@ -178,28 +185,28 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
        </form>
 
        {/* Security Operations Area */}
-       <form action={pwAction} className="bg-red-50 border border-red-100 p-8 sm:p-12 rounded-[2rem] shadow-sm relative overflow-hidden">
+       <form action={pwAction} className="bg-status-error-soft border border-status-error/30 p-8 sm:p-12 rounded-[2rem] shadow-sm relative overflow-hidden">
            <input type="hidden" name="userId" value={user.id} />
            <div className="flex flex-col sm:flex-row gap-8 items-start sm:items-center justify-between relative z-10">
                <div className="max-w-xl space-y-2">
                    <div className="flex items-center gap-2">
-                       <ShieldAlert className="w-6 h-6 text-red-500" />
-                       <h3 className="text-xl font-bold text-red-900">Force Password Reset</h3>
+                       <ShieldAlert className="w-6 h-6 text-status-error" />
+                       <h3 className="text-xl text-status-error">Reset their password</h3>
                    </div>
-                   <p className="text-red-700 text-sm leading-relaxed">As an Administrator, you possess clearance to forcibly override this user's password. This action happens instantaneously and will lock out existing sessions immediately.</p>
+                   <p className="text-status-error text-sm leading-relaxed">As an Administrator, you possess clearance to forcibly override this user's password. This action happens instantaneously and will lock out existing sessions immediately.</p>
                </div>
                
                <div className="w-full sm:w-80 flex flex-col gap-3">
                    <input type="password" name="newPassword" required disabled={isResetting}
-                          className="w-full px-4 py-3 bg-white border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/30 font-medium text-slate-900 placeholder-slate-400"
+                          className="w-full px-4 py-3 bg-white border border-status-error/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-status-error/30 font-medium text-slate-900 placeholder-slate-400"
                           placeholder="Type new temporary password..." />
                    
-                   <button type="submit" disabled={isResetting} className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold shadow-sm transition-all active:scale-95 w-full">
+                   <button type="submit" disabled={isResetting} className="bg-status-error hover:bg-status-error disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold shadow-sm transition-all active:scale-95 w-full">
                        {isResetting ? 'Processing Override...' : 'Confirm Force Override'}
                    </button>
                    
-                   {pwState?.error && <p className="text-xs font-bold text-red-600 mt-2 text-center">{pwState.error}</p>}
-                   {pwState?.success && <p className="text-xs font-bold text-emerald-600 mt-2 text-center">{pwState.message}</p>}
+                   {pwState?.error && <p className="text-xs font-bold text-status-error mt-2 text-center">{pwState.error}</p>}
+                   {pwState?.success && <p className="text-xs font-bold text-status-success mt-2 text-center">{pwState.message}</p>}
                </div>
            </div>
        </form>

@@ -2,9 +2,12 @@
 import { useAuth } from "@/lib/auth-context";
 import { Clock, AlertTriangle, FileText, ArrowRight, Activity, CalendarDays, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { NewsFeed } from "@/components/NewsFeed";
+import { TodayPanel } from "@/components/TodayPanel";
 import { fetchMySubmissions } from "@/app/actions/submissions";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useState, useEffect } from "react";
+import { formatDate } from "@/lib/utils";
 
 export default function EmployeeDashboard() {
   const { user } = useAuth();
@@ -24,30 +27,34 @@ export default function EmployeeDashboard() {
   const recent = mySubmissions.slice(0, 3);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="space-y-8 animate-in fade-in duration-300 pb-12 ease-cg">
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-brand-900 tracking-tight">Welcome back, {user.name.split(' ')[0]}</h1>
+          <h1 className="text-3xl text-ui-text-primary tracking-tight">Welcome back, {user.name.split(' ')[0]}</h1>
           <p className="text-slate-500 mt-2 text-lg">Here is your stewardship overview for today.</p>
         </div>
         
         {/* Current Duty Status Card */}
         <div className="bg-white px-5 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-accent-100 flex items-center justify-center">
-            <Activity className="w-5 h-5 text-accent-600" />
+          <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center">
+            <Activity className="w-5 h-5 text-brand-600" />
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Duty</p>
-            <p className="font-semibold text-brand-900">{user.title}</p>
+            <p className="font-semibold text-ui-text-primary">{user.title}</p>
           </div>
         </div>
       </div>
 
+      {/* What this person actually has on today. */}
+      <TodayPanel />
+
+
       {/* Action Cards (High Priority) */}
       <div>
-        <h2 className="text-lg font-semibold text-brand-900 mb-4 flex items-center gap-2">
-          <AlertTriangle className="w-5 h-5 text-orange-500" />
+        <h2 className="text-lg font-semibold text-ui-text-primary mb-4 flex items-center gap-2">
+          <AlertTriangle className="w-5 h-5 text-status-warning" />
           Action Required
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -57,18 +64,18 @@ export default function EmployeeDashboard() {
             </div>
           ) : (
             actionRequired.map(sub => (
-              <div key={sub.id} className="bg-white rounded-2xl p-6 border-l-4 border-orange-500 shadow-sm outline border-slate-200 outline-1 outline-transparent hover:outline-orange-200 transition-all cursor-pointer group">
+              <div key={sub.id} className="bg-white rounded-2xl p-6 border-l-4 border-status-warning/30 shadow-sm outline border-slate-200 outline-1 outline-transparent hover:outline-orange-200 transition-all cursor-pointer group">
                 <div className="flex justify-between items-start mb-4">
                   <StatusBadge status={sub.status} />
-                  <span className="text-xs font-medium text-slate-400">{new Date(sub.updatedAt).toLocaleDateString()}</span>
+                  <span className="text-xs font-medium text-slate-400">{formatDate(sub.updatedAt)}</span>
                 </div>
-                <h3 className="font-semibold text-lg text-brand-900 capitalize mb-1">
+                <h3 className="font-semibold text-lg text-ui-text-primary capitalize mb-1">
                   {sub.type} Update
                 </h3>
                 <p className="text-sm text-slate-600 mb-4 line-clamp-2">
                   Manager requested revisions on submission {sub.id}. Please review feedback thread.
                 </p>
-                <Link href={`/employee/submissions/${sub.id}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors">
+                <Link href={`/employee/submissions/${sub.id}`} className="inline-flex items-center gap-1.5 text-sm font-semibold text-status-warning hover:text-status-warning transition-colors">
                   Review Details <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
               </div>
@@ -81,7 +88,7 @@ export default function EmployeeDashboard() {
         
         {/* Quick Actions */}
         <div className="space-y-4 lg:col-span-2">
-          <h2 className="text-lg font-semibold text-brand-900 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-ui-text-primary flex items-center gap-2">
             <FileText className="w-5 h-5 text-brand-500" />
             Quick Submissions
           </h2>
@@ -91,7 +98,7 @@ export default function EmployeeDashboard() {
                 <Clock className="w-6 h-6 text-brand-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-brand-900">Log Timesheet</h3>
+                <h3 className="font-semibold text-ui-text-primary">Log Timesheet</h3>
                 <p className="text-sm text-slate-500 mt-1">Submit your daily or weekly hours.</p>
               </div>
             </Link>
@@ -101,27 +108,27 @@ export default function EmployeeDashboard() {
                 <Activity className="w-6 h-6 text-slate-700" />
               </div>
               <div>
-                <h3 className="font-semibold text-brand-900">Transfer Record</h3>
+                <h3 className="font-semibold text-ui-text-primary">Transfer Record</h3>
                 <p className="text-sm text-slate-500 mt-1">Log a decedent transfer operation.</p>
               </div>
             </Link>
 
             <Link href="/employee/submissions/new/incident" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow hover:border-brand-300 transition-all group flex items-start gap-4">
-              <div className="p-3 bg-red-50 rounded-xl group-hover:bg-red-100 transition-colors">
-                <AlertTriangle className="w-6 h-6 text-red-600" />
+              <div className="p-3 bg-status-error-soft rounded-xl group-hover:bg-status-error-soft transition-colors">
+                <AlertTriangle className="w-6 h-6 text-status-error" />
               </div>
               <div>
-                <h3 className="font-semibold text-brand-900">Incident Report</h3>
+                <h3 className="font-semibold text-ui-text-primary">Incident Report</h3>
                 <p className="text-sm text-slate-500 mt-1">Report a safety or operational issue.</p>
               </div>
             </Link>
             
             <Link href="/employee/schedule" className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:shadow hover:border-brand-300 transition-all group flex items-start gap-4">
-              <div className="p-3 bg-indigo-50 rounded-xl group-hover:bg-indigo-100 transition-colors">
-                <CalendarDays className="w-6 h-6 text-indigo-600" />
+              <div className="p-3 bg-brand-100 rounded-xl group-hover:bg-brand-100 transition-colors">
+                <CalendarDays className="w-6 h-6 text-accent-on-surface" />
               </div>
               <div>
-                <h3 className="font-semibold text-brand-900">View Schedule</h3>
+                <h3 className="font-semibold text-ui-text-primary">View Schedule</h3>
                 <p className="text-sm text-slate-500 mt-1">Check your upcoming assignments.</p>
               </div>
             </Link>
@@ -131,7 +138,7 @@ export default function EmployeeDashboard() {
         {/* Recent Submissions Activity */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-brand-900">Recent Activity</h2>
+            <h2 className="text-lg font-semibold text-ui-text-primary">Recent Activity</h2>
             <Link href="/employee/submissions" className="text-sm font-medium text-brand-600 hover:text-brand-800">View All</Link>
           </div>
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden min-h-[150px]">
@@ -145,8 +152,8 @@ export default function EmployeeDashboard() {
                   <li key={sub.id} className="p-4 hover:bg-slate-50 transition-colors">
                     <Link href={`/employee/submissions/${sub.id}`} className="flex items-center justify-between gap-4">
                       <div className="overflow-hidden">
-                        <p className="font-semibold text-sm text-brand-900 truncate capitalize">{sub.type}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{new Date(sub.createdAt).toLocaleDateString()}</p>
+                        <p className="font-semibold text-sm text-ui-text-primary truncate capitalize">{sub.type}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{formatDate(sub.createdAt)}</p>
                       </div>
                       <StatusBadge status={sub.status} />
                     </Link>
@@ -158,6 +165,24 @@ export default function EmployeeDashboard() {
         </div>
 
       </div>
+
+      {/* Company news, written by the communications team. */}
+      <section className="pt-2">
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <p className="cg-eyebrow">Company news</p>
+            <h2 className="mt-1 text-2xl">Recent news &amp; updates</h2>
+          </div>
+          <Link
+            href="/news"
+            className="shrink-0 text-sm text-accent-on-surface transition-colors hover:text-accent-dark"
+          >
+            View all
+          </Link>
+        </div>
+        <NewsFeed limit={6} />
+      </section>
+
     </div>
   );
 }

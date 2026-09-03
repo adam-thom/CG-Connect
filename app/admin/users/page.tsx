@@ -6,8 +6,11 @@ import { Users, Search, Filter, Shield, UserPlus, Trash2, Edit, Loader2 } from "
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { useToast, useConfirm } from "@/components/Toast";
 
 export default function AdminStaffDirectory() {
+  const toast = useToast();
+  const { confirm, dialog } = useConfirm();
   const { user } = useAuth();
   const [directory, setDirectory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -29,11 +32,21 @@ export default function AdminStaffDirectory() {
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
-      if(confirm(`Are you absolutely sure you want to delete ${name}? This action cannot be reversed.`)) {
-          const res = await deleteUserAction(id);
-          if (res?.error) alert(res.error);
-          else loadUsers();
-      }
+    const ok = await confirm({
+      title: `Delete ${name}?`,
+      body: "Their account and history will be removed. This cannot be undone.",
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
+
+    const res = await deleteUserAction(id);
+    if (res?.error) {
+      toast.error(res.error);
+    } else {
+      toast.success(`${name} was removed.`);
+      loadUsers();
+    }
   };
 
   if (!user || user.role !== 'admin') return null;
@@ -46,7 +59,8 @@ export default function AdminStaffDirectory() {
   });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+    <div className="space-y-8 animate-in fade-in duration-300 pb-12 ease-cg">
+      {dialog}
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm relative overflow-hidden">
         <div className="absolute right-0 top-0 w-64 h-64 bg-brand-50 rounded-full blur-3xl -mr-20 -mt-20 z-0 pointer-events-none opacity-60"></div>
@@ -57,7 +71,7 @@ export default function AdminStaffDirectory() {
             </div>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Staff Directory</h1>
           </div>
-          <p className="text-slate-500 max-w-xl text-lg">Manage all active Employee and Manager profiles, assigning routing Tags systematically across the enterprise.</p>
+          <p className="text-slate-500 max-w-xl text-lg">Add people, update their details, and set which location they work from.</p>
         </div>
         <div className="relative z-10">
             <Link href="/admin/users/new" className="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-sm active:scale-95 flex items-center gap-2">
@@ -140,7 +154,7 @@ export default function AdminStaffDirectory() {
                     <td className="px-6 py-5">
                        <div className="flex flex-wrap gap-1">
                           {u.tags.length === 0 ? (
-                             <span className="text-xs text-slate-400 italic">No Tags Assigned</span>
+                             <span className="text-xs text-slate-400 italic">No tags yet</span>
                           ) : (
                              u.tags.map((t: any) => (
                                <span key={t.id} className="px-2 py-1 bg-slate-100 text-slate-600 rounded-md text-[10px] font-bold uppercase tracking-wider whitespace-nowrap">
@@ -155,7 +169,7 @@ export default function AdminStaffDirectory() {
                            <Link href={`/admin/users/${u.id}/edit`} className="p-2 text-slate-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors">
                                <Edit className="w-4 h-4" />
                            </Link>
-                           <button onClick={() => handleDelete(u.id, u.name)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                           <button onClick={() => handleDelete(u.id, u.name)} className="p-2 text-slate-400 hover:text-status-error hover:bg-status-error-soft rounded-lg transition-colors">
                                <Trash2 className="w-4 h-4" />
                            </button>
                        </div>

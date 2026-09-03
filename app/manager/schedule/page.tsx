@@ -1,215 +1,429 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { MOCK_SCHEDULE_ENTRIES, MOCK_USERS, MOCK_SUBMISSIONS, ScheduleRole } from "@/lib/mock-data";
-import { ChevronLeft, ChevronRight, Phone, Truck, Flame, Plus, Mail } from "lucide-react";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  ClipboardList,
+  Clock,
+  MapPin,
+  Loader2,
+  CheckCircle2,
+  Trash2,
+  AlertCircle,
+} from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import Link from "next/link";
+import { cn, formatLongDate } from "@/lib/utils";
 import { Modal } from "@/components/Modal";
+import { useToast, useConfirm } from "@/components/Toast";
+import { createService, getServicesForMonth, deleteService } from "@/app/actions/lineup";
+import {
+  WEEKDAY_LABELS,
+  addMonths,
+  buildMonthGrid,
+  monthLabel,
+  monthRange,
+  todayKey,
+} from "@/lib/calendar";
+
+type Assignment = { id: string; roleName: string; staffName: string };
+type Service = {
+  id: string;
+  title: string;
+  date: string;
+  time: string | null;
+  location: string | null;
+  assignments: Assignment[];
+};
 
 export default function ManagerSchedule() {
   const { user } = useAuth();
+  const now = new Date();
+  const [{ year, month }, setCursor] = useState({
+    year: now.getFullYear(),
+    month: now.getMonth(),
+  });
+  const [services, setServices] = useState<Service[]>([]);
+  /** The month the loaded services belong to; null until the first load. */
+  const [loadedMonth, setLoadedMonth] = useState<string | null>(null);
+  const monthKey = `${year}-${month}`;
+  const isLoading = loadedMonth !== monthKey;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newService, setNewService] = useState({ title: "", time: "", location: "" });
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const toast = useToast();
+  const { confirm, dialog } = useConfirm();
+
+  const refresh = async () => {
+    const { start, end } = monthRange(year, month);
+    const rows = await getServicesForMonth(start, end);
+    setServices(rows as unknown as Service[]);
+  };
+
+  useEffect(() => {
+    let active = true;
+    const { start, end } = monthRange(year, month);
+    getServicesForMonth(start, end)
+      .then(rows => {
+        if (!active) return;
+        setServices(rows as unknown as Service[]);
+        setLoadedMonth(`${year}-${month}`);
+      })
+      .catch(() => {
+        if (active) setError("Something went wrong on our end. Please try again.");
+      })
+      .finally(() => {
+        // `isLoading` is derived, so nothing to reset here.
+      });
+    return () => {
+      active = false;
+    };
+  }, [year, month]);
+
+  const grid = useMemo(() => buildMonthGrid(year, month), [year, month]);
+
+  const byDay = useMemo(() => {
+    const map = new Map<string, Service[]>();
+    for (const s of services) {
+      const list = map.get(s.date) ?? [];
+      list.push(s);
+      map.set(s.date, list);
+    }
+    return map;
+  }, [services]);
+
+  const dayServices = selectedDate ? (byDay.get(selectedDate) ?? []) : [];
+  const needingRoster = useMemo(
+    () => services.filter(s => s.date >= todayKey() && s.assignments.length === 0).slice(0, 5),
+    [services]
+  );
 
   if (!user) return null;
 
-  const daysInMonth = 31;
-  const startDay = 4; // Thu
+  const step = (delta: number) => setCursor(c => addMonths(c.year, c.month, delta));
 
-  const REQUIRED_ROLES: ScheduleRole[] = [
-    "Lead Director - MB",
-    "Lead Director - CSG",
-    "Lead Director - EVG",
-    "Lead Director - EDENS",
-    "TRANSFERS - FIRST",
-    "TRANSFERS - SECOND",
-    "TRANSFERS - BACK UP",
-    "CREMATIONS",
-    "ME RUN"
-  ];
-
-  const getRoleIcon = (roleType: string) => {
-    if (roleType.includes("Lead Director")) return <Phone className="w-3.5 h-3.5 text-brand-700" />;
-    if (roleType.includes("TRANSFERS") || roleType.includes("ME RUN")) return <Truck className="w-3.5 h-3.5 text-slate-600" />;
-    if (roleType === "CREMATIONS") return <Flame className="w-3.5 h-3.5 text-orange-600" />;
-    return null;
-  };
-
-  const handleDayClick = (dateStr: string) => {
-    setSelectedDate(dateStr);
+  const openDay = (key: string) => {
+    setSelectedDate(key);
+    setNewService({ title: "", time: "", location: "" });
+    setSaveStatus("idle");
+    setError(null);
     setIsModalOpen(true);
   };
 
-  const handleSendSchedule = () => {
-    alert("Schedule has been successfully emailed to all assigned staff!");
+  const handleAddService = () => {
+    if (!selectedDate || !newService.title.trim()) return;
+    setSaveStatus("saving");
+    setError(null);
+    startTransition(async () => {
+      const res = await createService({ ...newService, date: selectedDate });
+      if (res.success) {
+        await refresh();
+        setNewService({ title: "", time: "", location: "" });
+        setSaveStatus("saved");
+        toast.success("Service added.");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      } else {
+        setSaveStatus("idle");
+        setError("That did not save. Please try again.");
+      }
+    });
   };
 
-  const currentMonthDateString = "2026-10-";
+  const handleDelete = async (service: Service) => {
+    const ok = await confirm({
+      title: "Remove this service?",
+      body: `“${service.title}” on ${service.date}, along with its roster.`,
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (!ok) return;
+    startTransition(async () => {
+      const res = await deleteService(service.id);
+      if (res.success) {
+        await refresh();
+        toast.success("Service removed.");
+      } else {
+        toast.error("That did not delete. Please try again.");
+      }
+    });
+  };
 
   return (
-    <div className="animate-in fade-in duration-500 pb-12 overflow-x-hidden">
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+    <div className="animate-in fade-in duration-300 ease-cg overflow-x-hidden pb-12">
+      {dialog}
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-3xl font-bold text-brand-900 tracking-tight">Department Deployment</h1>
-          <p className="text-slate-500 mt-2 text-lg">Click any date to modify shift assignments.</p>
+          <p className="cg-eyebrow">Workforce planning</p>
+          <h1 className="mt-2 text-4xl">Department Schedule</h1>
+          <p className="mt-2 text-base">Click any date to add a service or build its line-up.</p>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={handleSendSchedule}
-            className="flex items-center gap-2 px-4 py-2 bg-brand-900 text-white rounded-lg font-semibold shadow-sm hover:bg-brand-800 transition-colors"
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              const n = new Date();
+              setCursor({ year: n.getFullYear(), month: n.getMonth() });
+            }}
+            className="cg-btn-secondary min-h-0 py-2 text-sm"
           >
-            <Mail className="w-4 h-4" />
-            Send Schedule
-          </button>
-          <button className="p-2 border border-slate-200 rounded-lg bg-white shadow-sm hover:bg-slate-50 text-slate-700 font-medium text-sm">
             Today
           </button>
-          <div className="flex items-center rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
-            <button className="p-2 hover:bg-slate-50 text-slate-500 border-r border-slate-200"><ChevronLeft className="w-4 h-4" /></button>
-            <span className="px-4 py-1.5 font-semibold text-brand-900 min-w-36 text-center">October 2026</span>
-            <button className="p-2 hover:bg-slate-50 text-slate-500 border-l border-slate-200"><ChevronRight className="w-4 h-4" /></button>
+          <div className="flex items-center overflow-hidden rounded-full border border-ui-border bg-ui-surface">
+            <button
+              onClick={() => step(-1)}
+              aria-label="Previous month"
+              className="border-r border-ui-border p-2 text-ui-text-secondary transition-colors hover:bg-ui-bg-alt"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <span className="min-w-40 px-4 py-1.5 text-center text-sm font-medium text-ui-text-primary">
+              {monthLabel(year, month)}
+            </span>
+            <button
+              onClick={() => step(1)}
+              aria-label="Next month"
+              className="border-l border-ui-border p-2 text-ui-text-secondary transition-colors hover:bg-ui-bg-alt"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-8 items-start relative z-0">
-        <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden w-full">
-          <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-              <div key={d} className="py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      {error && (
+        <div role="alert" className="cg-callout mb-6 flex items-center gap-3 text-sm text-status-error">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <div className="flex flex-col items-start gap-6 xl:flex-row">
+        <div className="cg-card w-full min-w-0 flex-1 overflow-hidden p-0">
+          <div className="grid grid-cols-7 border-b border-ui-border bg-ui-bg-alt">
+            {WEEKDAY_LABELS.map(d => (
+              <div key={d} className="cg-eyebrow py-3 text-center text-sage">
                 {d}
               </div>
             ))}
           </div>
-          
-          <div className="grid grid-cols-7 auto-rows-[140px]">
-            {/* Empty padding blocks */}
-            {Array.from({ length: startDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="border-r border-b border-slate-100 bg-slate-50/30 p-2 opacity-50"></div>
-            ))}
-            
-            {/* Real day blocks */}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const dayStr = String(i + 1).padStart(2, '0');
-              const dateKey = `${currentMonthDateString}${dayStr}`;
-              
-              const dayEntries = MOCK_SCHEDULE_ENTRIES.filter(e => e.date === dateKey);
-              const isToday = dateKey === "2026-10-02";
-              
-              return (
-                <div 
-                  key={i} 
-                  onClick={() => handleDayClick(dateKey)}
-                  className="border-r border-b border-slate-100 p-2 relative group cursor-pointer hover:bg-brand-50/30 transition-colors flex flex-col"
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <span className={cn(
-                      "text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full pointer-events-none",
-                      isToday ? "bg-brand-900 text-white shadow-sm" : "text-slate-700"
-                    )}>
-                      {i + 1}
-                    </span>
-                    <button className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-brand-600 hover:bg-brand-100 transition-colors pointer-events-none">
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="space-y-1 overflow-y-auto flex-1 scrollbar-hide">
-                    {dayEntries.map(entry => {
-                      const userObj = MOCK_USERS.find(u => u.id === entry.userId);
-                      return (
-                        <div key={entry.id} className="text-[11px] px-1.5 py-1 rounded border border-slate-200 bg-white text-slate-700 flex justify-between items-center shadow-sm">
-                          <span className="truncate pr-1 font-medium">{userObj?.name.split(' ')[0]}</span>
-                          <span className="shrink-0">{getRoleIcon(entry.roleType)}</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
 
-        <div className="w-full xl:w-80 space-y-6 shrink-0 z-0">
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 rounded-bl-full -mr-4 -mt-4"></div>
-            <h3 className="font-bold text-red-900 mb-2 relative z-10">Upcoming Vacancies</h3>
-            <p className="text-sm text-red-800 relative z-10">Weekend of Oct 10th is missing Lead coverage.</p>
-          </div>
-
-          <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
-            <h3 className="font-semibold text-brand-900 mb-4 pb-3 border-b border-slate-100">Today's Active Team</h3>
-            <ul className="space-y-4">
-              {MOCK_SCHEDULE_ENTRIES.filter(e => e.date === "2026-10-02").map(entry => {
-                const u = MOCK_USERS.find(u => u.id === entry.userId);
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-3 p-20 text-sm text-sage">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              One moment.
+            </div>
+          ) : (
+            <div className="grid grid-cols-7">
+              {grid.map(cell => {
+                const list = byDay.get(cell.key) ?? [];
                 return (
-                  <li key={entry.id} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
-                       {getRoleIcon(entry.roleType)}
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-brand-900">{u?.name}</p>
-                      <p className="text-xs text-slate-500 font-medium tracking-wide">{entry.roleType}</p>
-                    </div>
-                  </li>
+                  <button
+                    key={cell.key}
+                    onClick={() => openDay(cell.key)}
+                    aria-label={`${cell.key}, ${list.length} service${list.length === 1 ? "" : "s"}`}
+                    className={cn(
+                      "group flex min-h-32 flex-col gap-1 border-b border-r border-ui-border p-2 text-left transition-colors hover:bg-ui-bg-alt",
+                      !cell.inCurrentMonth && "bg-ui-bg-alt/40"
+                    )}
+                  >
+                    <span className="flex items-center justify-between">
+                      <span
+                        className={cn(
+                          "flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium",
+                          cell.isToday
+                            ? "bg-accent text-white"
+                            : cell.inCurrentMonth
+                            ? "text-ui-text-primary"
+                            : "text-sage/60"
+                        )}
+                      >
+                        {cell.day}
+                      </span>
+                      <Plus className="h-4 w-4 text-sage opacity-0 transition-opacity group-hover:opacity-100" />
+                    </span>
+
+                    <span className="flex flex-col gap-1 overflow-hidden">
+                      {list.slice(0, 3).map(s => (
+                        <span
+                          key={s.id}
+                          className="truncate rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-tight tracking-tight text-white"
+                        >
+                          {s.title}
+                        </span>
+                      ))}
+                      {list.length > 3 && (
+                        <span className="px-1.5 text-[10px] text-sage">
+                          +{list.length - 3} more
+                        </span>
+                      )}
+                    </span>
+                  </button>
                 );
               })}
-            </ul>
-          </div>
+            </div>
+          )}
         </div>
+
+        <aside className="w-full shrink-0 space-y-6 xl:w-80">
+          <div className="cg-panel-accent">
+            <p className="cg-eyebrow mb-3 block text-white/80">Needs a line-up</p>
+            {isLoading ? (
+              <p className="text-sm text-white/80">One moment.</p>
+            ) : needingRoster.length === 0 ? (
+              <p className="text-sm text-white/85">Every upcoming service has a roster.</p>
+            ) : (
+              <ul className="space-y-3">
+                {needingRoster.map(s => (
+                  <li key={s.id}>
+                    <Link
+                      href={`/manager/lineup?date=${s.date}`}
+                      className="flex items-start gap-3 text-sm leading-snug text-white/90 transition-colors hover:text-white"
+                    >
+                      <ClipboardList className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>
+                        <span className="font-medium text-white">{s.title}</span> on {s.date}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="cg-card">
+            <p className="cg-eyebrow mb-3 block text-sage">This month</p>
+            <p className="font-serif text-4xl text-accent-on-surface">
+              {isLoading ? "—" : services.length}
+            </p>
+            <p className="mt-1 text-sm text-sage">
+              {services.length === 1 ? "service scheduled" : "services scheduled"}
+            </p>
+          </div>
+        </aside>
       </div>
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={`Assign Staff: ${selectedDate}`}>
-        <div className="space-y-6 flex flex-col h-[75vh]">
-          <p className="text-sm text-slate-600 shrink-0">Select personnel to fill all required roles for this date. Unavailable employees are omitted.</p>
-          
-          <div className="space-y-3 overflow-y-auto pr-2 pb-2 flex-1 scrollbar-thin scrollbar-thumb-slate-200 hover:scrollbar-thumb-slate-300">
-            {REQUIRED_ROLES.map(role => {
-              // Map mock assignments to slots
-              const existingEntry = selectedDate ? MOCK_SCHEDULE_ENTRIES.find(e => e.date === selectedDate && e.roleType === role) : undefined;
-
-              // Filter users who are OFF on this date
-              const availableUsers = MOCK_USERS.filter(u => {
-                const isOff = MOCK_SUBMISSIONS.some(sub => 
-                  sub.type === "time-off" && 
-                  sub.status === "approved" && 
-                  sub.submitterId === u.id && 
-                  sub.data?.dates?.includes(selectedDate)
-                );
-                return !isOff;
-              });
-
-              return (
-                <div key={role} className="flex flex-col gap-1.5 border border-slate-200 p-3 rounded-xl bg-slate-50/50 shadow-sm">
-                  <div className="flex items-center gap-2 mb-1">
-                    {getRoleIcon(role)}
-                    <label className="text-xs font-bold text-slate-800 tracking-wider uppercase">{role}</label>
-                  </div>
-                  <select 
-                    defaultValue={existingEntry?.userId || ""}
-                    className="w-full border border-slate-200 rounded-lg p-2.5 bg-white focus:ring-2 focus:ring-brand-500 focus:border-brand-500 font-medium text-slate-700 text-sm shadow-sm transition-all"
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={
+          selectedDate
+            ? formatLongDate(selectedDate)
+            : ""
+        }
+      >
+        <div className="space-y-6">
+          <div>
+            <h3 className="cg-eyebrow mb-3 block text-sage">Scheduled services</h3>
+            {dayServices.length === 0 ? (
+              <p className="text-sm text-sage">No services are scheduled for this date.</p>
+            ) : (
+              <ul className="space-y-3">
+                {dayServices.map(s => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between gap-3 rounded-[var(--radius-panel)] border border-ui-border bg-ui-surface p-3"
                   >
-                    <option value="">-- Click to assign staff --</option>
-                    {availableUsers.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.title})</option>
-                    ))}
-                  </select>
-                </div>
-              );
-            })}
+                    <div className="min-w-0">
+                      <p className="truncate text-[1rem] text-ui-text-primary">{s.title}</p>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-sage">
+                        {s.time && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" /> {s.time}
+                          </span>
+                        )}
+                        {s.location && (
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" /> {s.location}
+                          </span>
+                        )}
+                        <span>
+                          {s.assignments.length === 0
+                            ? "No roster yet"
+                            : `${s.assignments.length} assigned`}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Link
+                        href={`/manager/lineup?date=${s.date}`}
+                        className="rounded-full bg-brand-100 px-3 py-1.5 text-xs font-medium text-accent-on-surface transition-colors hover:bg-brand-200"
+                      >
+                        Build line-up
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(s)}
+                        disabled={isPending}
+                        aria-label={`Remove ${s.title}`}
+                        className="rounded-full p-2 text-sage transition-colors hover:bg-status-error-soft hover:text-status-error disabled:opacity-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 shrink-0">
-            <button onClick={() => setIsModalOpen(false)} className="px-5 py-2.5 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
-              Cancel
-            </button>
-            <button onClick={() => setIsModalOpen(false)} className="bg-brand-900 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-brand-800 transition-colors shadow-sm">
-              Confirm Assignments
-            </button>
+          <div className="rounded-[var(--radius-panel)] border border-dashed border-ui-border p-4">
+            <h3 className="cg-eyebrow mb-3 block text-sage">Add a service</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <input
+                placeholder="Service name, e.g. Miller Funeral"
+                value={newService.title}
+                onChange={e => setNewService({ ...newService, title: e.target.value })}
+                className="col-span-full rounded-[var(--radius-panel)] border border-ui-border bg-ui-bg px-3 py-2.5 text-sm text-ui-text-primary outline-none transition-colors placeholder:text-sage/70 focus:border-accent focus:bg-ui-surface"
+              />
+              <input
+                placeholder="Time, e.g. 10:30 AM"
+                value={newService.time}
+                onChange={e => setNewService({ ...newService, time: e.target.value })}
+                className="rounded-[var(--radius-panel)] border border-ui-border bg-ui-bg px-3 py-2.5 text-sm text-ui-text-primary outline-none transition-colors placeholder:text-sage/70 focus:border-accent focus:bg-ui-surface"
+              />
+              <input
+                placeholder="Location"
+                value={newService.location}
+                onChange={e => setNewService({ ...newService, location: e.target.value })}
+                className="rounded-[var(--radius-panel)] border border-ui-border bg-ui-bg px-3 py-2.5 text-sm text-ui-text-primary outline-none transition-colors placeholder:text-sage/70 focus:border-accent focus:bg-ui-surface"
+              />
+              <button
+                onClick={handleAddService}
+                disabled={!newService.title.trim() || saveStatus === "saving"}
+                className="cg-btn-primary col-span-full"
+              >
+                {saveStatus === "saving" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : saveStatus === "saved" ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                {saveStatus === "saving"
+                  ? "One moment."
+                  : saveStatus === "saved"
+                  ? "Saved."
+                  : "Add service"}
+              </button>
+            </div>
           </div>
+
+          {/* Rostering lives in the Daily Line-up, which saves assignments
+            * against the service. Duplicating it here would mean two places to
+            * do one job, so this links across instead. */}
+          {selectedDate && (
+            <Link
+              href={`/manager/lineup?date=${selectedDate}`}
+              className="cg-btn-secondary w-full"
+            >
+              <ClipboardList className="h-4 w-4" />
+              Open the line-up for this day
+            </Link>
+          )}
         </div>
       </Modal>
     </div>

@@ -83,5 +83,19 @@ export async function getSessionUser() {
     include: { tags: true }
   });
 
+  if (!user) return null;
+
+  // Outside production, let the session's role win so the dev role preview in
+  // the top bar changes the UI as well as middleware. Without this the two
+  // disagree: middleware reads the JWT while the UI reads the database, and you
+  // get a manager page rendered inside an employee shell.
+  //
+  // In production the database is always the authority, so a role revoked in
+  // the directory takes effect immediately rather than lingering until the
+  // session expires.
+  if (process.env.NODE_ENV !== 'production' && payload.role) {
+    return { ...user, role: payload.role };
+  }
+
   return user;
 }

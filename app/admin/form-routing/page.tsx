@@ -1,117 +1,154 @@
 "use client";
 
-import { useAuth } from "@/lib/auth-context";
-import { useRouting, RoutingConfig } from "@/lib/routing-context";
-import { MANAGER_ROLES } from "@/lib/mock-data";
-import { ShieldAlert, Route, Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
+import { Loader2, Route, Check, ArrowRight, Info } from "lucide-react";
+import { fetchTags, fetchFormRouting, setFormRouting } from "@/app/actions/tags";
+import { ROUTABLE_FORMS as FORMS } from "@/lib/forms";
+import { useToast } from "@/components/Toast";
+import { cn } from "@/lib/utils";
+
+type Tag = { id: string; name: string; type: string };
+
 
 export default function FormRoutingPage() {
-  const { user } = useAuth();
-  const { routingConfig, updateRouting, isLoading } = useRouting();
-
-  const [localConfig, setLocalConfig] = useState<RoutingConfig | null>(null);
+  const toast = useToast();
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [routing, setRouting] = useState<Record<string, string[]>>({});
+  const [loaded, setLoaded] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    if (!isLoading && !localConfig) {
-      setLocalConfig(routingConfig);
-    }
-  }, [isLoading, routingConfig, localConfig]);
+    let active = true;
+    Promise.all([fetchTags(), fetchFormRouting()])
+      .then(([t, r]) => {
+        if (!active) return;
+        setTags(t as unknown as Tag[]);
+        setRouting(r);
+      })
+      .catch(() => toast.error("Something went wrong on our end. Please try again."))
+      .finally(() => {
+        if (active) setLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  if (!user || user.role !== "admin") return (
-    <div className="flex flex-col items-center justify-center p-20 text-center text-red-500">
-      <ShieldAlert className="w-16 h-16 mb-4" />
-      <h2 className="text-xl font-bold">Unauthorized Configuration Screen</h2>
-    </div>
-  );
+  // Saves on each toggle. A rules screen that needs a separate Save button is
+  // one where people leave without pressing it.
+  const toggle = (formKey: string, tagId: string) => {
+    const current = routing[formKey] ?? [];
+    const next = current.includes(tagId)
+      ? current.filter(id => id !== tagId)
+      : [...current, tagId];
 
-  if (!localConfig) return <div className="p-8 text-slate-500 font-medium">Loading routing logic...</div>;
+    const snapshot = routing;
+    setRouting(prev => ({ ...prev, [formKey]: next }));
 
-  const handleToggle = (formKey: keyof RoutingConfig, role: string) => {
-    const activeRoles = localConfig[formKey] as string[];
-    let newRoles;
-    if (activeRoles.includes(role)) {
-      newRoles = activeRoles.filter(r => r !== role);
-    } else {
-      newRoles = [...activeRoles, role];
-    }
-    const updated = { ...localConfig, [formKey]: newRoles };
-    setLocalConfig(updated);
+    startTransition(async () => {
+      const res = await setFormRouting(formKey, next);
+      if (!res.success) {
+        setRouting(snapshot);
+        toast.error(res.error ?? "That did not save. Please try again.");
+      }
+    });
   };
 
-  const handleSave = () => {
-    updateRouting("transfer", localConfig.transfer);
-    updateRouting("timesheet", localConfig.timesheet);
-    updateRouting("incident", localConfig.incident);
-    alert("System logic successfully injected!");
-  };
-
-  const renderRoleToggles = (formKey: 'transfer' | 'timesheet' | 'incident') => {
-    return MANAGER_ROLES.map(role => (
-      <label key={role} className="flex items-center gap-3 p-3 border border-slate-100 rounded-lg bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
-        <input 
-          type="checkbox" 
-          checked={(localConfig[formKey] as string[]).includes(role)} 
-          onChange={() => handleToggle(formKey, role)}
-          className="w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
-        />
-        <span className="text-sm font-semibold text-slate-700">{role}</span>
-      </label>
-    ));
-  };
+  // Only manager and other groups can receive records; employee tags describe
+  // who files them, not who reviews them.
+  const routableTags = tags.filter(t => t.type !== "EMPLOYEE");
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500 pb-12">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-900 tracking-tight flex items-center gap-3">
-            <Route className="w-8 h-8 text-brand-700" />
-            Form Routing Config
-          </h1>
-          <p className="text-slate-500 mt-2 text-lg">Set the automated managerial destinations for employee submissions.</p>
-        </div>
-        <button 
-          onClick={handleSave}
-          className="flex items-center gap-2 px-6 py-2.5 bg-brand-900 text-white font-semibold rounded-lg hover:bg-brand-800 transition-colors shadow-sm"
-        >
-          <Save className="w-4 h-4" /> Save Routing Flow
-        </button>
+    <div className="animate-in fade-in duration-300 ease-cg mx-auto max-w-4xl pb-16">
+      <div className="mb-8">
+        <p className="cg-eyebrow">Workflow</p>
+        <h1 className="mt-2 text-4xl">Form routing</h1>
+        <p className="mt-2 text-base">
+          Choose which tags receive each kind of record. Changes save as you make them.
+        </p>
       </div>
 
-      <div className="space-y-6">
-        {/* Transfer Records */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="text-xl font-bold text-slate-800">Transfer Records Workflow</h2>
-            <p className="text-sm text-slate-500 mt-1">Select the generic management roles that will receive incoming transfer disposition and pickup logs.</p>
-          </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-l-4 border-brand-500">
-            {renderRoleToggles('transfer')}
-          </div>
-        </div>
-
-        {/* Timesheets Secondary */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="text-xl font-bold text-slate-800">Timesheet Transfer Alerts</h2>
-            <p className="text-sm text-slate-500 mt-1">Timesheets automatically bind to the user's selected Location. Select the roles that receive the simulated alert concurrently when <strong>Transfer Time</strong> &gt; 0.</p>
-          </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-l-4 border-amber-500">
-            {renderRoleToggles('timesheet')}
-          </div>
-        </div>
-
-        {/* Incident Reports */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-            <h2 className="text-xl font-bold text-slate-800">Incident Report Escalation</h2>
-            <p className="text-sm text-slate-500 mt-1">Incidents inherently route to the selected Location phase. Select the compliance/overhead roles that actively receive the explicit escalated alert alongside them.</p>
-          </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 border-l-4 border-red-500">
-            {renderRoleToggles('incident')}
-          </div>
-        </div>
+      <div className="cg-callout mb-8 flex items-start gap-3 text-sm">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+        <p className="text-ui-text-secondary">
+          A rule applies to records filed from now on. Records already submitted keep the
+          approvers they were filed with, so changing a rule never rewrites history.{" "}
+          <Link href="/admin/assign-roles" className="text-accent-on-surface hover:underline">
+            Manage tags
+          </Link>
+          .
+        </p>
       </div>
+
+      {!loaded ? (
+        <div className="flex items-center justify-center gap-3 p-20 text-sm text-sage">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          One moment.
+        </div>
+      ) : routableTags.length === 0 ? (
+        <div className="cg-card py-16 text-center">
+          <Route className="mx-auto mb-4 h-10 w-10 text-sage" />
+          <p className="text-sage">There are no manager tags to route to yet.</p>
+          <Link href="/admin/assign-roles" className="cg-btn-primary mt-6">
+            Create a tag
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          {FORMS.map(form => {
+            const selected = routing[form.key] ?? [];
+            return (
+              <section key={form.key} className="cg-card">
+                <div className="mb-4 flex items-baseline justify-between gap-3">
+                  <div>
+                    <h2 className="text-xl">{form.label}</h2>
+                    <p className="cg-meta mt-0.5 block text-sage">{form.hint}</p>
+                  </div>
+                  <span
+                    className={selected.length === 0 ? "cg-pill-warning" : "cg-pill-success"}
+                  >
+                    {selected.length === 0
+                      ? "Not routed"
+                      : `${selected.length} ${selected.length === 1 ? "tag" : "tags"}`}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {routableTags.map(tag => {
+                    const on = selected.includes(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => toggle(form.key, tag.id)}
+                        disabled={isPending}
+                        aria-pressed={on}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors disabled:opacity-60",
+                          on
+                            ? "border-accent bg-accent text-white"
+                            : "border-ui-border text-ui-text-secondary hover:border-brand-300 hover:bg-brand-50"
+                        )}
+                      >
+                        {on && <Check className="h-3.5 w-3.5" />}
+                        {tag.name}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selected.length === 0 && (
+                  <p className="mt-3 flex items-center gap-1.5 text-sm text-status-warning">
+                    <ArrowRight className="h-3.5 w-3.5" />
+                    Nobody is set to receive these. They will still appear in the review queue.
+                  </p>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

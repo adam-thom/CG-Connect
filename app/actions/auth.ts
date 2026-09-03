@@ -10,21 +10,21 @@ export async function loginAction(prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
 
   if (!email || !password) {
-    return { error: 'Email and password are required' };
+    return { error: 'Please enter your email address and password.' };
   }
 
   const user = await prisma.user.findUnique({
-    where: { email: email.toLowerCase() },
+    where: { email: email.toLowerCase().trim() },
   });
 
   if (!user || !user.passwordHash) {
-    return { error: 'Invalid email or password' };
+    return { error: "That email and password don't match. Please try again." };
   }
 
   const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
   if (!isValidPassword) {
-    return { error: 'Invalid email or password' };
+    return { error: "That email and password don't match. Please try again." };
   }
 
   // Create JWT session cookie 

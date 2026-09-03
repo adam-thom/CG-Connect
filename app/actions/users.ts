@@ -25,6 +25,30 @@ export async function fetchDetailedUsers() {
   });
 }
 
+/**
+ * Roster for the manager Staff Profiles screen. Managers need to see who is on
+ * the team, so this is scoped to manager+admin rather than admin-only, and
+ * returns no credential fields.
+ */
+export async function fetchStaffDirectory() {
+  const currentUser = await getSessionUser();
+  if (!currentUser || (currentUser.role !== 'manager' && currentUser.role !== 'admin')) {
+    throw new Error('Unauthorized');
+  }
+  return prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      department: true,
+      title: true,
+      tags: { select: { id: true, name: true, type: true } },
+    },
+    orderBy: [{ role: 'asc' }, { name: 'asc' }],
+  });
+}
+
 export async function fetchUserById(id: string) {
   const currentUser = await getSessionUser();
   if (!currentUser || currentUser.role !== 'admin') {

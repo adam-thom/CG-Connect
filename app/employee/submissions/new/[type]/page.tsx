@@ -25,6 +25,24 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
   const [transferType, setTransferType] = useState<string>("Standard");
   const [hasTransferTime, setHasTransferTime] = useState<boolean>(false);
 
+  // The app has every input needed to work the total out. Asking a person to do
+  // the arithmetic at the end of a shift invites errors that reach payroll.
+  const [sheet, setSheet] = useState({ timeIn: "", timeOut: "", lunch: "", ot: "" });
+
+  const totalHours = (() => {
+    if (!sheet.timeIn || !sheet.timeOut) return null;
+    const [inH, inM] = sheet.timeIn.split(":").map(Number);
+    const [outH, outM] = sheet.timeOut.split(":").map(Number);
+    if ([inH, inM, outH, outM].some(n => Number.isNaN(n))) return null;
+
+    let minutes = outH * 60 + outM - (inH * 60 + inM);
+    // A shift that ends before it starts ran past midnight.
+    if (minutes < 0) minutes += 24 * 60;
+
+    const worked = minutes / 60 - (parseFloat(sheet.lunch) || 0) + (parseFloat(sheet.ot) || 0);
+    return Math.max(0, Math.round(worked * 100) / 100);
+  })();
+
   useEffect(() => {
     if (state.success) {
       router.push("/employee/submissions");
@@ -35,8 +53,8 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
 
   const renderTimesheetForm = () => (
     <div className="space-y-6 relative">
-      <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 mb-6">
-        <p className="text-amber-800 text-sm font-medium flex items-center gap-2">
+      <div className="bg-status-warning-soft p-4 rounded-xl border border-status-warning/30 mb-6">
+        <p className="text-status-warning text-sm font-medium flex items-center gap-2">
           <Clock className="w-5 h-5 shrink-0" />
           <span><strong>Note:</strong> Pay period cutoff is 4 days before the 15th and last day of each month.</span>
         </p>
@@ -44,9 +62,9 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 relative z-10">
         <div className="col-span-1 sm:col-span-2">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Location</label>
           <select name="location" className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
-            <option value="">-- Select Target Location Hierarchy --</option>
+            <option value="">Choose a location</option>
             <option value="MB">Location Manager - MB</option>
             <option value="CSG">Location Manager - CSG</option>
             <option value="EVG">Location Manager - EVG</option>
@@ -59,38 +77,90 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
         </div>
         <div className="hidden sm:block"></div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Time In</label>
-          <input type="time" name="timeIn" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+          <label htmlFor="timeIn" className="block text-sm font-medium text-slate-700 mb-2">Time In</label>
+          <input
+            id="timeIn"
+            type="time"
+            name="timeIn"
+            value={sheet.timeIn}
+            onChange={e => setSheet(v => ({ ...v, timeIn: e.target.value }))}
+            className="w-full border border-slate-200 rounded-lg p-3 bg-white"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Time Out</label>
-          <input type="time" name="timeOut" className="w-full border border-slate-200 rounded-lg p-3 bg-white" />
+          <label htmlFor="timeOut" className="block text-sm font-medium text-slate-700 mb-2">Time Out</label>
+          <input
+            id="timeOut"
+            type="time"
+            name="timeOut"
+            value={sheet.timeOut}
+            onChange={e => setSheet(v => ({ ...v, timeOut: e.target.value }))}
+            className="w-full border border-slate-200 rounded-lg p-3 bg-white"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Lunch Hour (Duration)</label>
-          <input type="number" step="0.5" name="lunch" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="e.g. 1.0" />
+          <label htmlFor="lunch" className="block text-sm font-medium text-slate-700 mb-2">Lunch Hour (Duration)</label>
+          <input
+            id="lunch"
+            type="number"
+            step="0.5"
+            min="0"
+            name="lunch"
+            value={sheet.lunch}
+            onChange={e => setSheet(v => ({ ...v, lunch: e.target.value }))}
+            className="w-full border border-slate-200 rounded-lg p-3 bg-white"
+            placeholder="e.g. 1.0"
+          />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Over Time Hours</label>
-          <input type="number" step="0.5" name="ot" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="e.g. 0.0" />
+          <label htmlFor="ot" className="block text-sm font-medium text-slate-700 mb-2">Over Time Hours</label>
+          <input
+            id="ot"
+            type="number"
+            step="0.5"
+            min="0"
+            name="ot"
+            value={sheet.ot}
+            onChange={e => setSheet(v => ({ ...v, ot: e.target.value }))}
+            className="w-full border border-slate-200 rounded-lg p-3 bg-white"
+            placeholder="e.g. 0.0"
+          />
         </div>
         <div>
-          <label className="block text-sm font-bold text-brand-900 mb-2 flex items-center justify-between">
+          <label className="block text-sm font-bold text-ui-text-primary mb-2 flex items-center justify-between">
             Transfer Time (Hours)
           </label>
           <input 
             type="number" 
             step="0.5" 
             name="transferTime" 
-            className="w-full border border-brand-200 rounded-lg p-3 bg-brand-50 font-medium text-brand-900" 
+            className="w-full border border-brand-200 rounded-lg p-3 bg-brand-50 font-medium text-ui-text-primary" 
             placeholder="e.g. 2.0" 
             onChange={(e) => setHasTransferTime(parseFloat(e.target.value) > 0)}
           />
-          <p className="text-xs text-brand-600 mt-1 font-medium italic">If entered, copy is routed to Transfer Manager.</p>
+          <p className="text-xs text-brand-600 mt-1 font-medium italic">If you enter transfer time, your transfer manager receives a copy.</p>
         </div>
         <div>
           <label className="block text-sm font-bold text-slate-700 mb-2">Total Hours</label>
-          <input type="number" step="0.5" name="total" className="w-full border-2 border-slate-300 rounded-lg p-3 bg-slate-50 font-bold" placeholder="Required Calculation" />
+          {/* Read-only and derived. The value still posts via the hidden input
+            * so the server receives exactly what the person was shown. */}
+          <input type="hidden" name="total" value={totalHours ?? ""} />
+          <div
+            aria-live="polite"
+            className="flex w-full items-baseline gap-2 rounded-lg border-2 border-brand-200 bg-brand-50 p-3"
+          >
+            <span className="font-serif text-2xl text-accent-on-surface">
+              {totalHours === null ? "—" : totalHours}
+            </span>
+            <span className="text-sm text-sage">
+              {totalHours === null ? "Enter a start and finish time" : "hours"}
+            </span>
+          </div>
+          {totalHours !== null && (
+            <p className="cg-meta mt-1 text-sage">
+              Worked out from your times, less lunch, plus overtime.
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -111,7 +181,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
 
       <div className="relative z-10">
         <label className="block text-sm font-medium text-slate-700 mb-2">Transfer Team</label>
-        <input type="text" name="team" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Name(s) of personnel involved" />
+        <input type="text" name="team" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Who was on the transfer" />
       </div>
 
       <div className="relative z-10">
@@ -120,13 +190,13 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
           name="transferType" 
           value={transferType}
           onChange={(e) => setTransferType(e.target.value)}
-          className="w-full border-2 border-brand-200 rounded-lg p-3 bg-brand-50 font-bold text-brand-900 cursor-pointer focus:ring-2 focus:ring-brand-500" 
+          className="w-full border-2 border-brand-200 rounded-lg p-3 bg-brand-50 font-bold text-ui-text-primary cursor-pointer focus:ring-2 focus:ring-brand-500" 
         >
           <option value="Standard">Standard Transfer</option>
           <option value="M.E.">M.E. (Medical Examiner) Transfer</option>
           <option value="Non-M.E. Police">Non-M.E. Police Transfer</option>
         </select>
-        <p className="text-xs text-brand-700 mt-2">All Transfer Records route directly to TRANSFER MANAGER.</p>
+        <p className="text-xs text-brand-700 mt-2">Transfer records go straight to your transfer manager.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-6 relative z-10">
@@ -136,7 +206,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Place of Death</label>
-          <input type="text" name="placeOfDeath" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Specific hospital, address, etc." />
+          <input type="text" name="placeOfDeath" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Hospital, residence or address" />
         </div>
       </div>
 
@@ -156,8 +226,8 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
       </div>
 
       {(transferType === "M.E." || transferType === "Non-M.E. Police") && (
-        <div className="p-6 border-2 border-slate-200 rounded-xl bg-slate-50 relative z-10 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-          <h3 className="font-bold text-slate-900 flex items-center gap-2">Constabulary Details</h3>
+        <div className="p-6 border-2 border-slate-200 rounded-xl bg-slate-50 relative z-10 space-y-4 shadow-sm animate-in duration-300 fade-in slide-in-from-bottom-2 ease-cg">
+          <h3 className="text-slate-900 flex items-center gap-2">Constabulary Details</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Cons't Name</label>
@@ -172,8 +242,8 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
       )}
 
       {transferType === "M.E." && (
-        <div className="p-6 border-2 border-brand-200 rounded-xl bg-brand-50/50 relative z-10 space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2">
-          <h3 className="font-bold text-brand-900 flex items-center gap-2">M.E. Protocol Requirements</h3>
+        <div className="p-6 border-2 border-brand-200 rounded-xl bg-brand-50/50 relative z-10 space-y-4 shadow-sm animate-in duration-300 fade-in slide-in-from-bottom-2 ease-cg">
+          <h3 className="text-ui-text-primary flex items-center gap-2">M.E. Protocol Requirements</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">Name of Medical Examiner</label>
@@ -198,24 +268,24 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
 
       <div className="relative z-10">
         <label className="block text-sm font-medium text-slate-700 mb-2">Notes</label>
-        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[100px]" placeholder="Any additional narrative context..."></textarea>
+        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white min-h-[100px]" placeholder="Anything else we should know"></textarea>
       </div>
     </div>
   );
 
   const renderIncidentForm = () => (
     <div className="space-y-6 relative">
-      <div className="bg-red-50/50 border border-red-100 rounded-xl p-6 mb-8 text-center">
-         <h3 className="text-red-800 font-bold mb-1 flex justify-center items-center gap-2">
+      <div className="bg-status-error-soft/50 border border-status-error/30 rounded-xl p-6 mb-8 text-center">
+         <h3 className="text-status-error mb-1 flex justify-center items-center gap-2">
             <AlertTriangle className="w-5 h-5" /> Mandatory Routing
          </h3>
-         <p className="text-sm text-red-700 font-medium">All incident reports automatically deploy alerts to the assigned OHS MANAGER.</p>
+         <p className="text-sm text-status-error font-medium">Incident reports notify your OHS manager right away.</p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-2">Location Manager Assignment</label>
+        <label className="block text-sm font-medium text-slate-700 mb-2">Location</label>
         <select name="location" className="w-full border border-slate-200 rounded-lg p-3 bg-white font-medium text-slate-700 cursor-pointer">
-          <option value="">-- Coordinate with Location --</option>
+          <option value="">Choose a location</option>
           <option value="MB">Location Manager - MB</option>
           <option value="CSG">Location Manager - CSG</option>
           <option value="EVG">Location Manager - EVG</option>
@@ -230,33 +300,33 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">Location of Incident</label>
-          <input type="text" name="incidentLocation" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Address, Room, or Vehicle Designation" />
+          <input type="text" name="incidentLocation" className="w-full border border-slate-200 rounded-lg p-3 bg-white" placeholder="Where it happened" />
         </div>
       </div>
 
       <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-        <h3 className="text-slate-900 font-bold mb-3 flex items-center gap-2">
+        <h3 className="text-slate-900 mb-3 flex items-center gap-2">
            Nature of Incident
         </h3>
         <div className="grid grid-cols-3 gap-4">
           <label className="w-full cursor-pointer hover:-translate-y-1 transition-transform">
             <input type="radio" name="nature" className="peer sr-only" value="Injury" />
-            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-red-500 peer-checked:bg-red-50 text-slate-600 peer-checked:text-red-800 font-bold transition-all shadow-sm">INJURY</div>
+            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-status-error/30 peer-checked:bg-status-error-soft text-slate-600 peer-checked:text-status-error font-bold transition-all shadow-sm">INJURY</div>
           </label>
           <label className="w-full cursor-pointer hover:-translate-y-1 transition-transform">
             <input type="radio" name="nature" className="peer sr-only" value="Damage" />
-            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-orange-500 peer-checked:bg-orange-50 text-slate-600 peer-checked:text-orange-800 font-bold transition-all shadow-sm">DAMAGE</div>
+            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-status-warning/30 peer-checked:bg-status-warning-soft text-slate-600 peer-checked:text-status-warning font-bold transition-all shadow-sm">DAMAGE</div>
           </label>
           <label className="w-full cursor-pointer hover:-translate-y-1 transition-transform">
             <input type="radio" name="nature" className="peer sr-only" value="Legal" />
-            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-purple-500 peer-checked:bg-purple-50 text-slate-600 peer-checked:text-purple-800 font-bold transition-all shadow-sm">LEGAL</div>
+            <div className="h-full flex items-center justify-center p-4 rounded-xl border-2 border-slate-200 bg-white peer-checked:border-ui-border peer-checked:bg-brand-100 text-slate-600 peer-checked:text-accent-on-surface font-bold transition-all shadow-sm">LEGAL</div>
           </label>
         </div>
       </div>
       
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-2">Incident Narrative & Notes</label>
-        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white" rows={6} placeholder="Describe exactly what occurred in absolute objective detail..."></textarea>
+        <textarea name="notes" className="w-full border border-slate-200 rounded-lg p-4 bg-white" rows={6} placeholder="Describe what happened, in your own words"></textarea>
       </div>
 
       <div className="flex items-start gap-4 pt-6 border-t border-slate-100">
@@ -270,7 +340,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
 
   const getTitle = () => {
     switch(params.type) {
-      case "timesheet": return "Submit Timesheet";
+      case "timesheet": return "Send timesheet";
       case "transfer": return "Log Transfer Record";
       case "incident": return "File Incident Report";
       default: return `Submit ${params.type}`;
@@ -287,15 +357,15 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
   };
 
   return (
-    <div className="max-w-3xl mx-auto pb-16 animate-in fade-in duration-500">
+    <div className="max-w-3xl mx-auto pb-16 animate-in fade-in duration-300 ease-cg">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-brand-900 tracking-tight">{getTitle()}</h1>
-        <p className="text-slate-500 mt-2 text-lg">Complete any applicable fields below to submit to management.</p>
+        <h1 className="text-3xl text-ui-text-primary tracking-tight">{getTitle()}</h1>
+        <p className="text-slate-500 mt-2 text-lg">Fill in what applies. Your manager will see it once you send it.</p>
       </div>
 
       <form action={formAction} className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         {state.error && (
-            <div className="bg-red-50 p-4 border-b border-red-200 text-red-600 text-sm font-bold">
+            <div className="bg-status-error-soft p-4 border-b border-status-error/30 text-status-error text-sm font-bold">
                {state.error}
             </div>
         )}
@@ -310,7 +380,7 @@ export default function NewSubmissionPage(props: { params: Promise<{ type: strin
           </button>
           <div className="flex items-center gap-3">
             <button type="submit" disabled={isPending} className="flex items-center gap-2 text-white font-semibold px-8 py-3 bg-brand-900 rounded-xl hover:bg-brand-800 transition-colors shadow-md hover:shadow-lg transform active:scale-95 duration-150 disabled:opacity-50">
-              <Send className="w-5 h-5" /> {isPending ? "Submitting securely..." : "Submit Record"}
+              <Send className="w-5 h-5" /> {isPending ? "One moment." : "Send record"}
             </button>
           </div>
         </div>

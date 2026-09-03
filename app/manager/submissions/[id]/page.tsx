@@ -1,109 +1,148 @@
 "use client";
 
 import { useAuth } from "@/lib/auth-context";
-import { SubmissionDetail } from "@/components/SubmissionDetail";
-import { fetchSubmissionById, updateSubmissionStatusAdmin } from "@/app/actions/submissions";
+import { SubmissionDetail, type SubmissionRecord } from "@/components/SubmissionDetail";
+import {
+  addSubmissionComment,
+  fetchSubmissionById,
+  updateSubmissionStatusAdmin,
+} from "@/app/actions/submissions";
 import { notFound } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
+import { useToast } from "@/components/Toast";
+import { formatCalendarDate } from "@/lib/utils";
 
 const formatKey = (key: string) => {
-  const result = key.replace(/([A-Z])/g, " $1");
-  return result.charAt(0).toUpperCase() + result.slice(1);
+  const spaced = key.replace(/([A-Z])/g, " $1").toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 };
 
-export default function ManagerSubmissionViewPage({ params }: { params: { id: string } }) {
+function displayValue(value: unknown) {
+  if (value === null || value === undefined || value === "") return "—";
+  if (value instanceof Date) return formatCalendarDate(value);
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return String(value);
+}
+
+export default function ManagerSubmissionViewPage({
+  params,
+}: {
+  // `params` is a Promise in this version of Next. Typing it as a plain
+  // object compiles but invites reading `.id` off the Promise, which
+  // yields undefined at runtime.
+  params: Promise<{ id: string }>;
+}) {
+  const toast = useToast();
   const { user } = useAuth();
-  const [submission, setSubmission] = useState<any>(null);
+  const { id } = use(params);
+
+  const [submission, setSubmission] = useState<SubmissionRecord | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
-    const loadSubmission = async () => {
-       try {
-          const resolvedParams = await params;
-          if (!resolvedParams?.id) return;
-          const data = await fetchSubmissionById(resolvedParams.id);
-          setSubmission(data);
-       } catch (error) {
-          console.error("Failed to load submission:", error);
-       } finally {
-          setIsLoading(false);
-       }
+    let active = true;
+    fetchSubmissionById(id)
+      .then(data => {
+        if (active) setSubmission(data as SubmissionRecord | null);
+      })
+      .catch(error => {
+        console.error("Could not load that record", error);
+        if (active) setLoadFailed(true);
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
     };
-    loadSubmission();
-  }, [params]);
+  }, [id]);
 
   if (!user) return null;
-  if (isLoading) return <div className="p-12 flex justify-center"><Loader2 className="w-8 h-8 animate-spin text-brand-500" /></div>;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center gap-3 p-16 text-sm text-sage">
+        <Loader2 className="h-5 w-5 animate-spin" />
+        One moment.
+      </div>
+    );
+  }
+
+  if (loadFailed) {
+    return (
+      <div className="mx-auto max-w-lg p-16 text-center">
+        <p className="text-ui-text-primary">Something went wrong on our end.</p>
+        <p className="mt-1 text-sm text-sage">Please try again in a moment.</p>
+        <Link href="/manager/submissions" className="cg-btn-secondary mt-6">
+          Back to the review queue
+        </Link>
+      </div>
+    );
+  }
+
   if (!submission) return notFound();
 
-  // Basic check to ensure Manager
-  if (user.role !== "manager") {
-    return <div className="p-8 text-center text-red-600">Restricted access area.</div>;
+  // Admins are shown the whole queue, so they must be able to open what is in it.
+  if (user.role !== "manager" && user.role !== "admin") {
+    return (
+      <div className="p-8 text-center text-status-error">
+        This part of the portal is for reviewers.
+      </div>
+    );
   }
 
   const handleStatusChange = async (newStatus: string) => {
     try {
       await updateSubmissionStatusAdmin(submission.id, submission.type, newStatus);
-      setSubmission((prev: any) => prev ? { ...prev, status: newStatus as any } : prev);
-    } catch (e) {
-      alert("Failed to update status");
+      setSubmission(prev => (prev ? { ...prev, status: newStatus } : prev));
+      toast.success("Thank you. The record is updated and they have been told.");
+    } catch {
+      toast.error("That did not save. Please try again.");
     }
   };
 
-  const handleAddComment = (content: string) => {
-    const newComment = {
-      id: `CMT-${Date.now()}`,
-      authorId: user.id,
-      content,
-      createdAt: new Date().toISOString()
-    };
-    setSubmission((prev: any) => prev ? { 
-      ...prev, 
-      feedbackThread: [...prev.feedbackThread, newComment] 
-    } : prev);
-  };
-
-  // Managers never edit the form fields directly, they only review them and update status
-  const renderDataFields = (data: any) => {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
-        {Object.entries(data).map(([key, value]) => {
-          const isNarrative = typeof value === 'string' && value.length > 50;
-          
-          return (
-            <div key={key} className={isNarrative ? "col-span-full" : ""}>
-              <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
-                {formatKey(key)}
-              </label>
-              <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-200 text-brand-900 min-h-[50px] font-medium leading-relaxed">
-                {typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+  const handleAddComment = async (content: string) => {
+    const saved = await addSubmissionComment(submission.id, submission.type, content);
+    setSubmission(prev =>
+      prev ? { ...prev, feedbackThread: [...prev.feedbackThread, saved] } : prev
     );
   };
 
   return (
     <SubmissionDetail
       submission={submission}
-      title={`${formatKey(submission.type)} Record Detail`}
+      title={`${formatKey(submission.type)} record`}
       onStatusChange={handleStatusChange}
       onAddComment={handleAddComment}
     >
-      <div className="flex items-center gap-3 mb-8 pb-6 border-b border-slate-100">
-        <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 font-bold flex items-center justify-center shrink-0">
-          U
+      <div className="mb-8 flex items-center gap-3 border-b border-ui-border pb-6">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ui-bg-alt font-medium text-sage">
+          {submission.submitterName.slice(0, 1).toUpperCase()}
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-500 uppercase tracking-widest">Submitter Reference</p>
-          <p className="text-lg font-bold text-brand-900">{submission.submitterId}</p>
+          <p className="cg-eyebrow text-sage">Filed by</p>
+          <p className="text-lg text-ui-text-primary">{submission.submitterName}</p>
         </div>
       </div>
-      
-      {renderDataFields(submission.data)}
+
+      <div className="grid grid-cols-1 gap-x-8 gap-y-6 md:grid-cols-2">
+        {Object.entries(submission.data).map(([key, value]) => {
+          const isNarrative = typeof value === "string" && value.length > 50;
+          return (
+            <div key={key} className={isNarrative ? "col-span-full" : ""}>
+              <p className="mb-1.5 text-xs font-semibold tracking-wider text-sage uppercase">
+                {formatKey(key)}
+              </p>
+              <div className="min-h-[50px] rounded-xl border border-ui-border bg-ui-bg-alt/50 p-4 leading-relaxed text-ui-text-primary">
+                {displayValue(value)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </SubmissionDetail>
   );
 }

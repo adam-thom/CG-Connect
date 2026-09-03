@@ -1,37 +1,49 @@
 "use client";
+
 import { StatusBadge } from "./StatusBadge";
-import { FeedbackThread } from "./FeedbackThread";
-import { Submission, Comment } from "@/lib/mock-data";
-import { cn } from "@/lib/utils";
+import { FeedbackThread, type ThreadComment } from "./FeedbackThread";
+import { formatDate } from "@/lib/utils";
+
+export interface SubmissionRecord {
+  id: string;
+  type: string;
+  status: string;
+  submitterId: string;
+  submitterName: string;
+  createdAt: string;
+  updatedAt: string;
+  data: Record<string, unknown>;
+  feedbackThread: ThreadComment[];
+}
 
 interface SubmissionDetailProps {
-  submission: Submission;
+  submission: SubmissionRecord;
   title: string;
   children: React.ReactNode;
   onStatusChange?: (status: string) => void;
-  onAddComment?: (content: string) => void;
+  onAddComment?: (content: string) => Promise<void> | void;
 }
 
-export function SubmissionDetail({ 
-  submission, 
-  title, 
+export function SubmissionDetail({
+  submission,
+  title,
   children,
   onStatusChange,
-  onAddComment
+  onAddComment,
 }: SubmissionDetailProps) {
-  // We determine if we can edit by the current status
-  // but the specific form pages will manage if the fields are actually disabled
-  
   return (
-    <div className="max-w-4xl mx-auto pb-12 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+    <div className="animate-in fade-in mx-auto max-w-4xl pb-12 duration-300 ease-cg">
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-2xl font-bold text-brand-900 tracking-tight">{title}</h2>
-          <div className="flex items-center gap-3 mt-1.5 text-sm text-slate-500 font-medium">
-            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded">ID: {submission.id}</span>
-            <span>Submitted by {submission.submitterId}</span>
-            <span>•</span>
-            <span>{new Date(submission.createdAt).toLocaleDateString()}</span>
+          <h2 className="text-2xl tracking-tight text-ui-text-primary">{title}</h2>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-sage">
+            <span>Filed by {submission.submitterName}</span>
+            <span aria-hidden>•</span>
+            <span>{formatDate(submission.createdAt)}</span>
+            <span aria-hidden>•</span>
+            <span className="rounded bg-ui-bg-alt px-2 py-0.5 font-mono text-xs text-ui-text-secondary">
+              {submission.id}
+            </span>
           </div>
         </div>
         <div className="flex shrink-0">
@@ -39,17 +51,15 @@ export function SubmissionDetail({
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8 ring-1 ring-slate-900/5">
-        <div className="p-6 md:p-8">
-          {children}
-        </div>
+      <div className="mb-8 overflow-hidden rounded-2xl border border-ui-border bg-ui-surface shadow-sm">
+        <div className="p-6 md:p-8">{children}</div>
       </div>
 
-      <FeedbackThread 
+      <FeedbackThread
         comments={submission.feedbackThread}
         status={submission.status}
-        onStatusChange={(s) => onStatusChange?.(s)}
-        onAddComment={(c) => onAddComment?.(c)}
+        onStatusChange={s => onStatusChange?.(s)}
+        onAddComment={c => onAddComment?.(c)}
       />
     </div>
   );

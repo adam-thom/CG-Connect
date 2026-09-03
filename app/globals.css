@@ -1,67 +1,583 @@
 @import "tailwindcss";
+/* Entrance/exit utilities (animate-in, fade-in, slide-in-from-*, zoom-in-*).
+ * These class names were already used across the app but the plugin was never
+ * installed, so every animation silently did nothing. */
+@import "tw-animate-css";
 
 @theme {
-  /* Slate Scale - Overridden using User's Cream (#f3f2ed) and Slate Gray (#6e7c84) */
-  --color-slate-50: #f3f2ed;
-  --color-slate-100: #e8e6df;
-  --color-slate-200: #dcd9cf;
-  --color-slate-300: #c5c1b4;
-  --color-slate-400: #9ba0a5;
-  --color-slate-500: #6e7c84;
-  --color-slate-600: #59656e;
-  --color-slate-700: #49535a;
-  --color-slate-800: #3b4349;
-  --color-slate-900: #2d3439;
-  --color-slate-950: #1e2428;
+  /* ==================================================================
+   * THE CARING GROUP - DESIGN SYSTEM
+   * Source of truth: CLAUDE-design-system.md (brand owner's spec).
+   * Values below are final and exact. Never hardcode a hex in a
+   * component - always reference a token.
+   * ================================================================== */
 
-  /* Brand Scale - Using User's Peach (#e3c3b0) and Terracotta (#d87c61) */
-  --color-brand-50: #fdf5f3;
-  --color-brand-100: #fbe8e4;
-  --color-brand-200: #e3c3b0;
-  --color-brand-300: #eeaf97;
-  --color-brand-400: #e6957a;
-  --color-brand-500: #d87c61;
-  --color-brand-600: #ca694d;
-  --color-brand-700: #a34b35;
-  --color-brand-800: #873e2d;
-  --color-brand-900: #713629;
-  --color-brand-950: #3d1912;
+  /* --- Ink. Frames the page: navigation and footer only. ---------- */
+  --color-ink: #232a26;       /* --brand-ink       nav, footer, headings */
+  --color-ink-soft: #2e3630;  /* --brand-ink-soft  cards on dark         */
+  --color-ink-light: #37423a; /* --brand-ink-light announcement bar      */
 
-  --color-accent-100: #e8ecf2;
-  --color-accent-200: #c5d0de;
-  --color-accent-500: #4a6b8c;
-  --color-accent-600: #2d4661;
-  --color-accent-700: #1e3a5f;
+  /* --- Terracotta. An accent, NEVER a large field. ---------------- */
+  --color-accent: #c96f53;      /* --accent-primary buttons, links, eyebrows */
+  --color-accent-dark: #a6543a; /* --accent-dark    hover, stat figures      */
+  --color-accent-soft: #edbb9e; /* --accent-soft    accents on dark          */
 
-  --color-status-pending: #f59e0b;
-  --color-status-revision: #f97316;
-  --color-status-finalized: #10b981;
-  --color-status-approved: #0d9488;
-}
+  /* --- Cream. Carries the body. ----------------------------------- */
+  --color-cream: #faf8f2;     /* --bg-primary   page background     */
+  --color-cream-alt: #f1efe8; /* --bg-secondary alternating bands   */
 
-/* 
- * Dynamic Role-Based Theme 
- * Magically inverts all structural elements (white/slate) 
- * to the dark slate gray palette when the manager role is active.
- * Replaces the previous dark red layout.
- */
-.manager-theme {
-  --color-white: var(--color-slate-900);
-  --color-slate-50: var(--color-slate-950);
-  --color-slate-100: var(--color-slate-800);
-  --color-slate-200: var(--color-slate-700);
-  --color-slate-300: var(--color-slate-600);
-  --color-slate-400: var(--color-slate-500);
-  --color-slate-500: var(--color-slate-400);
-  --color-slate-600: var(--color-slate-300);
-  --color-slate-700: var(--color-slate-200);
-  --color-slate-800: var(--color-slate-100);
-  --color-slate-900: var(--color-slate-50);
-  --color-slate-950: var(--color-white);
+  /* --- Text ------------------------------------------------------- */
+  --color-ink-text: #2e332f;  /* --text-primary   headings          */
+  --color-body: #5f655e;      /* --text-secondary body copy         */
+  --color-sage: #71766f;      /* --brand-sage     muted labels, meta */
+
+  /* --- Tailwind ramp aliases -------------------------------------
+   * `brand-*` and `slate-*` are used throughout the codebase. Point
+   * them at the real brand values so existing utilities inherit the
+   * system instead of Tailwind's stock (cold) defaults. */
+  --color-brand-50: #fdf6f2;
+  --color-brand-100: #f7e3d8;
+  --color-brand-200: #edbb9e; /* = accent-soft */
+  --color-brand-300: #e0a184;
+  --color-brand-400: #d4866b;
+  --color-brand-500: #c96f53; /* = accent-primary */
+  --color-brand-600: #b96047;
+  --color-brand-700: #a6543a; /* = accent-dark */
+  --color-brand-800: #8a452f;
+  --color-brand-900: #6b3524;
+
+  --color-slate-50: #faf8f2;  /* = cream        */
+  --color-slate-100: #f1efe8; /* = cream-alt    */
+  --color-slate-200: #e4e1d8;
+  --color-slate-300: #cfcdc4;
+  --color-slate-400: #9fa39c;
+  --color-slate-500: #71766f; /* = sage         */
+  --color-slate-600: #5f655e; /* = text-secondary */
+  --color-slate-700: #4a504a;
+  --color-slate-800: #37423a; /* = ink-light    */
+  --color-slate-900: #2e332f; /* = text-primary */
+  --color-slate-950: #232a26; /* = ink          */
+
+  /* --- Status ----------------------------------------------------- */
+  --color-status-success: #4a7c59;
+  --color-status-warning: #a6753a;
+  --color-status-error: #a8503f;
+  --color-status-info: #4a6478;
+
+  --color-status-success-soft: #e3ede5;
+  --color-status-warning-soft: #f4eade;
+  --color-status-error-soft: #f6e2dc;
+  --color-status-info-soft: #e5ecf1;
+
+  /* --- Typography -------------------------------------------------
+   * Licensed brand faces are Baskerville Pro / Forma DJR Display.
+   * On screen the spec substitutes these Google equivalents. */
+  --font-serif: var(--font-playfair); /* headings, names */
+  --font-sans: var(--font-archivo);   /* body, labels, nav, buttons, forms */
+  --font-display: var(--font-playfair);
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* --- Shape and elevation ---------------------------------------- */
+  --radius-panel: 13px; /* small panels and rules */
+  --radius-card: 16px;  /* cards and code blocks  */
+  --radius-pill: 999px; /* buttons                */
+
+  /* One soft warm shadow only. */
+  --shadow-warm: 0 3px 14px rgba(90, 62, 48, 0.05);
+
+  /* Accent used for TEXT (eyebrows, links, small labels). On dark
+   * surfaces the spec calls for accent-soft, so this token is swapped by
+   * .theme-dark while button fills stay full-strength terracotta. */
+  --color-accent-on-surface: var(--color-accent);
+
+  /* --- Semantic UI tokens ----------------------------------------- */
+  --color-ui-bg: var(--color-cream);
+  --color-ui-bg-alt: var(--color-cream-alt);
+  --color-ui-surface: #ffffff;
+  --color-ui-surface-muted: var(--color-cream-alt);
+  --color-ui-text-primary: var(--color-ink-text);
+  --color-ui-text-secondary: var(--color-body);
+  --color-ui-border: rgba(35, 42, 38, 0.09);
 }
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-ui-bg text-ui-text-primary antialiased;
+    font-size: 1.05rem;
+    line-height: 1.72;
+  }
+
+  /* Headings are serif 400-500 ONLY. Bold reads as promotional and is
+   * out of brand - never add font-bold to a heading. */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif text-balance text-ui-text-primary;
+    font-weight: 400;
+  }
+
+  h1 {
+    font-size: clamp(2.15rem, 4.8vw, 3.5rem);
+    line-height: 1.06;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+  }
+
+  /* The spec's "card title" is a role, not every h3 in the DOM. Keep the
+   * default modest so compact list rows are not blown up, and opt into the
+   * full card-title scale with .cg-card-title. */
+  h3, h4, h5, h6 {
+    font-size: 1.05rem;
+    line-height: 1.35;
+    font-weight: 500;
+  }
+
+  /* Long body copy sits in text-secondary, never in ink or accent. */
+  p {
+    @apply text-ui-text-secondary;
+  }
+}
+
+/*
+ * ==================================================================
+ * CARING GROUP COMPONENT PRIMITIVES
+ * Built to CLAUDE-design-system.md. Radius 13px small panels / 16px
+ * cards / pill buttons. One soft warm shadow only. Reach for these
+ * rather than re-deriving shape and colour on every screen.
+ * ==================================================================
+ */
+@layer components {
+  /* Hero type, for the top of a landing surface only. */
+  .cg-hero {
+    @apply font-serif text-balance text-ui-text-primary;
+    font-weight: 400;
+    font-size: clamp(2.85rem, 8vw, 5.75rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+  }
+
+  /* Card title: serif 500, per the spec's type scale. */
+  .cg-card-title {
+    @apply font-serif text-ui-text-primary;
+    font-size: clamp(1.25rem, 2.4vw, 1.65rem);
+    line-height: 1.2;
+    font-weight: 500;
+  }
+
+  /* Standard white card: 16px radius, hairline border, warm shadow. */
+  .cg-card {
+    @apply border border-ui-border bg-ui-surface p-6;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-warm);
+  }
+
+  /* Recessed panel for secondary content. */
+  .cg-card-muted {
+    @apply border border-transparent bg-ui-bg-alt p-6;
+    border-radius: var(--radius-panel);
+  }
+
+  /* Ink feature panel. Ink frames the page - use sparingly. */
+  .cg-panel-ink {
+    @apply bg-ink p-6 text-white;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-warm);
+  }
+
+  /* Terracotta feature panel. Terracotta is an accent, never a large
+   * field - keep these small and infrequent on a screen. */
+  .cg-panel-accent {
+    @apply bg-accent p-6 text-white;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-warm);
+  }
+
+  /* Rule-callout: cream-secondary panel, 13px radius, 3px left border. */
+  .cg-callout {
+    @apply bg-ui-bg-alt p-5;
+    border-radius: var(--radius-panel);
+    border-left: 3px solid var(--color-accent);
+  }
+  .cg-callout-dont {
+    border-left-color: var(--color-sage);
+  }
+
+  /* Eyebrow / label: sans 600, 0.72rem, uppercase, 0.16em tracking. */
+  .cg-eyebrow {
+    @apply font-sans uppercase text-accent-on-surface;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+  }
+
+  /* Muted metadata label, sage. */
+  .cg-meta {
+    @apply font-sans text-sage;
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  /* Primary action: pill, terracotta, white, sans 500 @0.95rem,
+   * 46-50px tall, 26px horizontal padding, hover to accent-dark. */
+  .cg-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 bg-accent font-sans text-white
+           transition-colors hover:bg-accent-dark
+           disabled:pointer-events-none disabled:opacity-50;
+    border-radius: var(--radius-pill);
+    font-size: 0.95rem;
+    font-weight: 500;
+    min-height: 48px;
+    padding-inline: 26px;
+  }
+
+  /* Secondary action on cream. */
+  .cg-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 border border-ui-border bg-ui-surface
+           font-sans text-ui-text-primary transition-colors hover:bg-ui-bg-alt
+           disabled:pointer-events-none disabled:opacity-50;
+    border-radius: var(--radius-pill);
+    font-size: 0.95rem;
+    font-weight: 500;
+    min-height: 48px;
+    padding-inline: 26px;
+  }
+
+  /* Status / metadata pills. Tailwind v4 cannot @apply a component
+   * class, so the shared shape is declared once for all variants. */
+  .cg-pill,
+  .cg-pill-neutral,
+  .cg-pill-brand,
+  .cg-pill-success,
+  .cg-pill-warning,
+  .cg-pill-error {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-sans uppercase;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+  }
+  .cg-pill-neutral { @apply bg-ui-bg-alt text-sage; }
+  .cg-pill-brand   { @apply bg-brand-100 text-accent-dark; }
+  .cg-pill-success { @apply bg-status-success-soft text-status-success; }
+  .cg-pill-warning { @apply bg-status-warning-soft text-status-warning; }
+  .cg-pill-error   { @apply bg-status-error-soft text-status-error; }
+
+  /* Sidebar navigation item. `group` is a marker class - add it in the
+   * markup, it cannot be applied here. */
+  .cg-nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 font-sans text-sage
+           transition-colors hover:bg-ui-bg-alt hover:text-ui-text-primary;
+    border-radius: var(--radius-pill);
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+  .cg-nav-item-active {
+    @apply bg-brand-100 text-accent-dark;
+  }
+
+  /* Legacy aliases kept so older screens keep rendering while they are
+   * migrated onto the primitives above. */
+  .executive-shadow { box-shadow: var(--shadow-warm); }
+  .executive-card-hover { @apply transition-colors hover:border-brand-200; }
+  .text-balance { text-wrap: balance; }
+}
+
+/*
+ * ==================================================================
+ * DARK SURFACE THEME
+ * Applied to the manager area. Ink (#232A26) is the primary ground,
+ * ink-soft carries cards, and accents step down to accent-soft as the
+ * spec requires on dark. Reassigns semantic tokens ONLY - if a screen
+ * renders wrong here it is because it hardcodes a colour instead of
+ * using a token, and that screen is what needs fixing.
+ * ==================================================================
+ */
+/*
+ * ==================================================================
+ * INK SIDEBAR
+ * The navigation rail on the light (employee / admin) surfaces sits on
+ * the brand off-black, matching the top bar so the chrome reads as one
+ * continuous frame around the cream content. Like .theme-dark this only
+ * reassigns semantic tokens for its subtree, so every primitive inside
+ * the sidebar adapts without a variant of its own.
+ * ==================================================================
+ */
+.sidebar-ink {
+  --color-ui-bg: var(--color-ink);
+  --color-ui-bg-alt: var(--color-ink-light);
+  --color-ui-surface: var(--color-ink-soft);
+  --color-ui-surface-muted: var(--color-ink-light);
+  --color-ui-text-primary: var(--color-cream);
+  --color-ui-text-secondary: #c3c9c1;
+  --color-ui-border: rgba(250, 248, 242, 0.14);
+  --color-sage: #a9b0a7;
+  --color-accent-on-surface: var(--color-accent-soft);
+  color-scheme: dark;
+}
+
+/* Active item carries the brand: a terracotta pill on the green rail. */
+.sidebar-ink .cg-nav-item-active {
+  background-color: var(--color-accent);
+  color: #ffffff;
+}
+
+.theme-dark .cg-pill-brand {
+  color: var(--color-accent-soft);
+}
+
+.theme-dark {
+  --color-ui-bg: var(--color-ink);
+  --color-ui-bg-alt: var(--color-ink-light);
+  --color-ui-surface: var(--color-ink-soft);
+  --color-ui-surface-muted: var(--color-ink-light);
+  --color-ui-text-primary: var(--color-cream);
+  --color-ui-text-secondary: #b9beb7;
+  --color-ui-border: rgba(250, 248, 242, 0.16);
+
+  /* Sage is a muted label colour; the light value is unreadable on ink. */
+  --color-sage: #9ba39a;
+
+  /* Accents on dark. Button fills keep --color-accent. */
+  --color-accent-on-surface: var(--color-accent-soft);
+
+  /* The soft brand tints are near-white and are used all over as icon
+   * tiles, chips and hover fills. On ink they must become warm DARK tints
+   * or every accent sitting on them disappears. */
+  --color-brand-50: #322e2a;
+  --color-brand-100: #43382f;
+  --color-brand-200: #5a4638;
+
+  /* The cream/slate ramp is used widely for surfaces and text. Invert it
+   * so existing slate-* utilities stay legible on ink. */
+  --color-slate-50: #2e3630;
+  --color-slate-100: #37423a;
+  --color-slate-200: #455147;
+  --color-slate-300: #5c6a5f;
+  --color-slate-400: #8b948c;
+  --color-slate-500: #9ba39a;
+  --color-slate-600: #b9beb7;
+  --color-slate-700: #d2d6cf;
+  --color-slate-800: #e8e9e3;
+  --color-slate-900: #faf8f2;
+  --color-slate-950: #ffffff;
+
+  /* Soft status fills need to darken rather than lighten on ink. */
+  --color-status-success-soft: #2b3f33;
+  --color-status-warning-soft: #40372b;
+  --color-status-error-soft: #43302c;
+  --color-status-success: #7fb894;
+  --color-status-warning: #d3a86b;
+  --color-status-error: #e0907f;
+
+  color-scheme: dark;
+}
+
+/*
+ * The login photograph settles rather than appears: a slow, small scale-down
+ * under the scrim. Long and subtle enough to read as atmosphere, not motion.
+ */
+@keyframes cg-photo-settle {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.cg-photo-settle {
+  animation: cg-photo-settle 1400ms var(--ease-cg) both;
+}
+
+/*
+ * NAVIGATION DRAWER
+ * Off-canvas below lg, permanent above it. Written as an explicit rule rather
+ * than translate utilities: the utility version was being overridden and left
+ * the drawer stuck off-screen, and `transform` transitions reliably where
+ * Tailwind v4's `translate` property does not pair with transition-transform.
+ */
+.cg-drawer {
+  transform: translateX(-100%);
+  transition: transform 300ms var(--ease-cg);
+}
+.cg-drawer[data-open="true"] {
+  transform: translateX(0);
+}
+@media (min-width: 1024px) {
+  .cg-drawer {
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cg-drawer {
+    transition: none;
+  }
+}
+
+/* Entrance animation used by .stagger-entrance below. */
+@keyframes entrance-fade-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@layer utilities {
+  .stagger-entrance > * {
+    opacity: 0;
+    animation: entrance-fade-up 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  }
+
+  /* Entrance Staggering Delays */
+  .stagger-entrance > *:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-entrance > *:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-entrance > *:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-entrance > *:nth-child(4) { animation-delay: 0.4s; }
+  .stagger-entrance > *:nth-child(5) { animation-delay: 0.5s; }
+
+}
+
+@media print {
+  @page {
+    margin: 0.5in;
+    size: letter portrait;
+  }
+
+  /*
+   * Never print the interface theme.
+   *
+   * Managers work on a dark ink ground, and without this the whole sheet came
+   * out flooded with dark green and the body text — cream on screen — was
+   * invisible on paper. Resetting the semantic tokens for print means every
+   * component that reads them prints correctly with no per-component overrides.
+   */
+  :root,
+  .theme-dark,
+  .sidebar-ink {
+    --color-ui-bg: #ffffff;
+    --color-ui-bg-alt: #ffffff;
+    --color-ui-surface: #ffffff;
+    --color-ui-surface-muted: #ffffff;
+    --color-ui-text-primary: #000000;
+    --color-ui-text-secondary: #1a1a1a;
+    --color-ui-border: #cccccc;
+    --color-sage: #444444;
+    --color-accent-on-surface: #a6543a;
+  }
+
+  html,
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* The app shell paints its own ground and reserves space for a sidebar that
+   * is not printed. Both have to be undone or the sheet keeps a wide indent. */
+  body * {
+    background-image: none !important;
+  }
+
+  body > div,
+  main,
+  main > div {
+    background: transparent !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .print-hidden {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  aside,
+  nav,
+  header,
+  dialog,
+  [role="alert"],
+  [role="status"],
+  button:not(.print-include) {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Entrance animations must not leave anything mid-fade on paper. */
+  .animate-in,
+  .stagger-entrance > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+    box-shadow: none !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+}
+
+/*
+ * ==================================================================
+ * MOTION
+ * Calm, short, and consistent. Nothing overshoots or bounces: this is
+ * a portal used during difficult work. One easing curve and a small
+ * set of durations, applied through the tokens below.
+ * ==================================================================
+ */
+@theme {
+  /* One curve for the whole product: a gentle decelerate, no overshoot. */
+  --ease-cg: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@layer base {
+  /* Interactive chrome shares one curve so nothing feels out of step. */
+  a, button, input, select, textarea, summary,
+  [role="button"], [role="tab"] {
+    transition-timing-function: var(--ease-cg);
+  }
+
+  /* tw-animate-css reads --tw-duration / --tw-ease, which Tailwind's
+   * `duration-*` and `ease-*` utilities set. Defaults here are the fallback
+   * for any element that does not name its own.
+   *
+   * fill-mode defaults to `none` in the library, which means a delayed
+   * entrance renders fully visible, then snaps back to its start state when
+   * the delay elapses. `backwards` applies the start state during the delay so
+   * staggered content simply arrives. Deliberately not `both`: `forwards`
+   * would leave a transform on the element afterwards, and a lingering
+   * transform makes an element a containing block for any `position: fixed`
+   * descendant. */
+  .animate-in {
+    --tw-duration: 300ms;
+    --tw-ease: var(--ease-cg);
+    --tw-animation-fill-mode: backwards;
+    animation-fill-mode: backwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

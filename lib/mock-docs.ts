@@ -6,10 +6,10 @@ export const FEATURED_DOCS = [
     description: "Revised guidelines for on-site sanctuary maintenance and guest safety for Q4.",
     publishedAt: "PUBLISHED 2 DAYS AGO",
     buttonText: "Open PDF",
-    bgColor: "bg-[#A7705B]",
+    bgColor: "bg-brand-600",
     textColor: "text-white",
     tagColor: "bg-white/20 text-white",
-    btnColor: "bg-white text-slate-900 hover:bg-slate-50"
+    btnColor: "bg-white text-accent-dark hover:bg-brand-50"
   },
   {
     id: "f2",
@@ -18,10 +18,10 @@ export const FEATURED_DOCS = [
     description: "Complete listing of facility hours and employee rotation for the upcoming winter season.",
     publishedAt: "PUBLISHED 5 DAYS AGO",
     buttonText: "View Schedule",
-    bgColor: "bg-[#F7F4EF]",
-    textColor: "text-slate-900",
-    tagColor: "bg-slate-200/60 text-slate-600",
-    btnColor: "bg-[#8B5A44] text-white hover:bg-[#7a4c38]"
+    bgColor: "bg-ui-surface",
+    textColor: "text-ui-text-primary",
+    tagColor: "bg-ui-bg-alt text-ui-text-secondary",
+    btnColor: "bg-brand-700 text-white hover:bg-brand-800"
   },
   {
     id: "f3",
@@ -30,10 +30,10 @@ export const FEATURED_DOCS = [
     description: "New mental health support initiatives and fitness reimbursement updates for all staff.",
     publishedAt: "PUBLISHED OCT 12",
     buttonText: "Download",
-    bgColor: "bg-[#E6E8E8]",
-    textColor: "text-slate-900",
-    tagColor: "bg-white text-slate-600 font-bold",
-    btnColor: "bg-slate-900 text-white hover:bg-slate-800"
+    bgColor: "bg-ui-surface-muted",
+    textColor: "text-ui-text-primary",
+    tagColor: "bg-ui-surface text-ui-text-secondary font-bold",
+    btnColor: "bg-brand-600 text-white hover:bg-brand-700"
   }
 ];
 

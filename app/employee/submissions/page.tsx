@@ -4,9 +4,10 @@ import { useAuth } from "@/lib/auth-context";
 import { fetchMySubmissions } from "@/app/actions/submissions";
 import { StatusBadge } from "@/components/StatusBadge";
 import Link from "next/link";
-import { Search, Filter, ArrowRight, FilePlus, Loader2 } from "lucide-react";
+import { Search, Filter, ArrowRight, Loader2 } from "lucide-react";
+import { NewRecordMenu } from "@/components/NewRecordMenu";
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 export default function EmployeeSubmissions() {
   const { user } = useAuth();
@@ -29,18 +30,13 @@ export default function EmployeeSubmissions() {
   });
 
   return (
-    <div className="animate-in fade-in duration-500 pb-12">
+    <div className="animate-in fade-in duration-300 pb-12 ease-cg">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-brand-900 tracking-tight">My Submissions</h1>
+          <h1 className="text-3xl text-ui-text-primary tracking-tight">My Submissions</h1>
           <p className="text-slate-500 mt-2 text-lg">Track the status of your records and requests.</p>
         </div>
-        <div>
-          <Link href="/employee/dashboard" className="bg-accent-600 hover:bg-accent-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
-            <FilePlus className="w-5 h-5" />
-            New Submission
-          </Link>
-        </div>
+        <NewRecordMenu label="New submission" align="right" />
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -54,7 +50,7 @@ export default function EmployeeSubmissions() {
                 className={cn(
                   "px-4 py-1.5 rounded-md text-sm font-medium capitalize transition-all",
                   filter === tab 
-                    ? "bg-white text-brand-900 shadow-sm" 
+                    ? "bg-white text-ui-text-primary shadow-sm" 
                     : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50"
                 )}
               >
@@ -97,15 +93,15 @@ export default function EmployeeSubmissions() {
               ) : filteredData.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-500 italic">
-                    No submissions found for the selected filter.
+                    No records to show for this filter.
                   </td>
                 </tr>
               ) : (
                 filteredData.map(sub => (
                   <tr key={sub.id} className="hover:bg-slate-50/80 transition-colors group cursor-pointer" onClick={() => window.location.href = `/employee/submissions/${sub.id}`}>
-                    <td className="px-6 py-4 font-medium text-brand-900">{sub.id}</td>
+                    <td className="px-6 py-4 font-medium text-ui-text-primary">{sub.id}</td>
                     <td className="px-6 py-4 capitalize font-medium text-slate-700">{sub.type}</td>
-                    <td className="px-6 py-4">{new Date(sub.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4">{formatDate(sub.createdAt)}</td>
                     <td className="px-6 py-4">
                       <StatusBadge status={sub.status} />
                     </td>

@@ -1,245 +1,331 @@
 "use client";
 
-import { useState } from 'react';
-import { ADMIN_REGISTRY } from '@/lib/mock-docs';
-import { PlusCircle, Search, FileText, Image as ImageIcon, X, UploadCloud, Users, ArchiveRestore } from 'lucide-react';
-import Image from 'next/image';
+import { useActionState, useEffect, useState, useTransition } from 'react';
+import {
+  PlusCircle,
+  Search,
+  FileText,
+  Image as ImageIcon,
+  Table2,
+  Trash2,
+  Download,
+  Loader2,
+  AlertCircle,
+  FolderOpen,
+} from 'lucide-react';
+import {
+  uploadDocument,
+  fetchDocuments,
+  deleteDocument,
+  type DocFormState,
+} from '@/app/actions/documents';
+import { Modal } from '@/components/Modal';
+import { useToast, useConfirm } from '@/components/Toast';
+import { formatDate, cn } from '@/lib/utils';
+
+type Doc = {
+  id: string;
+  name: string;
+  type: string;
+  category: string;
+  sizeBytes: number;
+  sharedWith: string;
+  fileUrl: string | null;
+  originalName: string | null;
+  createdAt: string | Date;
+  author: { name: string | null } | null;
+};
+
+const ICON: Record<string, React.ElementType> = {
+  pdf: FileText,
+  docx: FileText,
+  xlsx: Table2,
+  csv: Table2,
+  image: ImageIcon,
+};
+
+const CATEGORIES = [
+  'POLICY MANUALS',
+  'STANDARDS OF PRACTICE',
+  'HR & HANDBOOKS',
+  'FORMS',
+  'HEALTH & SAFETY',
+  'GENERAL',
+];
+
+function humanSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const field =
+  'w-full rounded-[var(--radius-panel)] border border-ui-border bg-ui-bg px-3 py-2.5 text-sm text-ui-text-primary outline-none transition-colors placeholder:text-sage/70 focus:border-accent focus:bg-ui-surface';
 
 export function AdminDocuments() {
-  const [registry, setRegistry] = useState(ADMIN_REGISTRY);
-  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  const toast = useToast();
+  const { confirm, dialog } = useConfirm();
 
-  const handleUpdateClick = (id: string) => {
-    setSelectedDocId(id);
-    setIsUpdateModalOpen(true);
-  };
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [query, setQuery] = useState('');
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  const handleRemove = (id: string) => {
-    if (confirm("Are you sure you want to remove this document?")) {
-      setRegistry(prev => prev.filter(doc => doc.id !== id));
-    }
-  };
-
-  const handleOverwrite = () => {
-    alert("New file payload accepted and synchronized.");
-    setIsUpdateModalOpen(false);
-  };
-
-  const handleAddNew = () => {
-    const newDoc = {
-      id: `r${Date.now()}`,
-      title: "New_Company_Policy.pdf",
-      subtitle: "Newly uploaded document",
-      type: "GENERAL",
-      lastModified: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }),
-      icon: "pdf"
-    };
-    setRegistry([newDoc, ...registry]);
-    setIsAddModalOpen(false);
-    alert("New document successfully added to the registry.");
-  };
-
-  const filteredRegistry = registry.filter(doc => 
-    doc.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    doc.type.toLowerCase().includes(searchQuery.toLowerCase())
+  const [state, formAction, isUploading] = useActionState<DocFormState, FormData>(
+    uploadDocument,
+    {}
   );
 
-  const selectedDoc = registry.find(d => d.id === selectedDocId);
+  const load = () =>
+    fetchDocuments()
+      .then(rows => setDocs(rows as unknown as Doc[]))
+      .catch(err => console.error('Could not load documents', err))
+      .finally(() => setIsLoading(false));
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  useEffect(() => {
+    if (state.success) {
+      setIsAddOpen(false);
+      toast.success('Document uploaded.');
+      load();
+    } else if (state.error) {
+      toast.error(state.error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state]);
+
+  const remove = async (doc: Doc) => {
+    const ok = await confirm({
+      title: 'Remove this document?',
+      body: `“${doc.name}” will no longer be available to staff, and the file is deleted.`,
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
+    startTransition(async () => {
+      try {
+        await deleteDocument(doc.id);
+        await load();
+        toast.success('Document removed.');
+      } catch {
+        toast.error('That did not delete. Please try again.');
+      }
+    });
+  };
+
+  const filtered = docs.filter(d =>
+    [d.name, d.category, d.originalName]
+      .filter(Boolean)
+      .some(v => String(v).toLowerCase().includes(query.trim().toLowerCase()))
+  );
+
+  const totalBytes = docs.reduce((a, d) => a + d.sizeBytes, 0);
 
   return (
-    <div className="max-w-7xl mx-auto py-8 animate-in fade-in duration-500 relative">
-      
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+    <div className="animate-in fade-in duration-300 ease-cg mx-auto max-w-6xl pb-16">
+      {dialog}
+
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-           <div className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-2">PORTAL <span className="text-slate-300">&gt;</span> DOCUMENT CONTROL</div>
-           <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">Company Documents</h1>
+          <p className="cg-eyebrow">Document control</p>
+          <h1 className="mt-2 text-4xl">Company Repository</h1>
+          <p className="mt-2 text-base">Publish policies and forms for every location.</p>
         </div>
-        <button onClick={() => setIsAddModalOpen(true)} className="bg-[#A7705B] hover:bg-[#8B5A44] text-white px-6 py-3.5 flex items-center gap-2 rounded-full font-bold shadow-sm transition-all active:scale-95">
-          <PlusCircle className="w-5 h-5" />
-          Add New Document
+        <button onClick={() => setIsAddOpen(true)} className="cg-btn-primary group shrink-0">
+          <PlusCircle className="h-4 w-4 transition-transform group-hover:rotate-90" />
+          Upload a document
         </button>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-        {/* Central Library Stats */}
-        <div className="col-span-1 lg:col-span-2 bg-white rounded-[2rem] p-8 sm:p-10 shadow-sm border border-slate-100 flex flex-col justify-between overflow-hidden relative">
-           <div className="absolute -top-20 -right-20 w-64 h-64 bg-red-50 rounded-full opacity-60 mix-blend-multiply blur-3xl pointer-events-none"></div>
-           <div className="relative z-10 max-w-lg">
-             <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">CENTRAL LIBRARY</div>
-             <h2 className="text-4xl font-black text-slate-900 mb-3 tracking-tight">{registry.length} Active Files</h2>
-             <p className="text-slate-600 text-lg leading-relaxed">
-                Securely storing sensitive operational manuals, forms, and compliance certifications.
-             </p>
-           </div>
-           
-           <div className="flex items-center gap-4 mt-8 pt-4">
-             <div className="flex -space-x-3">
-                <div className="w-10 h-10 rounded-full bg-slate-300 border-2 border-white overflow-hidden shadow-sm flex items-center justify-center">
-                    <Users className="w-5 h-5 text-slate-500" />
-                </div>
-                <div className="w-10 h-10 rounded-full bg-slate-400 border-2 border-white overflow-hidden shadow-sm flex items-center justify-center">
-                    <ArchiveRestore className="w-5 h-5 text-slate-200" />
-                </div>
-                <div className="w-10 h-10 rounded-full bg-[#fceee6] text-[#A7705B] border-2 border-white shadow-sm flex items-center justify-center text-xs font-bold z-10">
-                   +4
-                </div>
-             </div>
-             <span className="text-sm font-medium text-slate-500">Viewing access shared with staff</span>
-           </div>
+      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div className="cg-card">
+          <p className="cg-eyebrow mb-1 block text-sage">Documents</p>
+          <p className="font-serif text-4xl text-accent-on-surface">
+            {isLoading ? '—' : docs.length}
+          </p>
         </div>
-
-        {/* Cloud Usage Stats */}
-        <div className="col-span-1 bg-white rounded-[2rem] p-8 sm:p-10 shadow-sm border border-slate-100 flex flex-col justify-between">
-           <div>
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-8">CLOUD USAGE</div>
-              <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden mb-4">
-                <div className="bg-[#A7705B] h-3 rounded-full" style={{ width: '62%' }}></div>
-              </div>
-              <p className="text-slate-900 font-black text-xl">
-                 6.2 GB <span className="text-slate-400 font-medium text-base">of 10 GB</span>
-              </p>
-           </div>
-           
-           <button className="text-[#A7705B] font-bold mt-6 text-left hover:text-[#8B5A44] transition-colors flex items-center gap-1 group">
-             Upgrade Storage <span className="group-hover:translate-x-1 transition-transform">-&gt;</span>
-           </button>
+        <div className="cg-card">
+          <p className="cg-eyebrow mb-1 block text-sage">Stored</p>
+          <p className="font-serif text-4xl text-accent-on-surface">
+            {isLoading ? '—' : humanSize(totalBytes)}
+          </p>
+        </div>
+        <div className="cg-card">
+          <p className="cg-eyebrow mb-1 block text-sage">Managers only</p>
+          <p className="font-serif text-4xl text-accent-on-surface">
+            {isLoading ? '—' : docs.filter(d => d.sharedWith === 'managers').length}
+          </p>
         </div>
       </div>
 
-      {/* Registry Table */}
-      <div className="bg-white rounded-[2rem] shadow-sm border border-slate-100 p-8 sm:p-10">
-         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Document Registry</h2>
-            <div className="relative max-w-md w-full sm:w-80">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search documents..." className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-full text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#A7705B]/20 transition-shadow" />
+      <div className="cg-card overflow-hidden p-0">
+        <div className="flex flex-col gap-4 border-b border-ui-border bg-ui-bg-alt p-5 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg">Registry</h2>
+          <div className="relative w-full max-w-xs">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-sage" />
+            <input
+              type="search"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Filter the registry"
+              aria-label="Filter documents"
+              className="w-full rounded-full border border-ui-border bg-ui-surface py-2 pl-9 pr-4 text-sm outline-none transition-colors placeholder:text-sage/70 focus:border-accent focus:ring-4 focus:ring-accent/10"
+            />
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center gap-3 p-16 text-sm text-sage">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            One moment.
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-16 text-center">
+            <FolderOpen className="mx-auto mb-4 h-10 w-10 text-sage" />
+            <p className="text-sage">
+              {docs.length === 0
+                ? 'Nothing uploaded yet.'
+                : "We couldn't find a document matching that."}
+            </p>
+            {docs.length === 0 && (
+              <button onClick={() => setIsAddOpen(true)} className="cg-btn-primary mt-6">
+                <PlusCircle className="h-4 w-4" />
+                Upload the first one
+              </button>
+            )}
+          </div>
+        ) : (
+          <ul className="divide-y divide-ui-border">
+            {filtered.map(doc => {
+              const Icon = ICON[doc.type] ?? FileText;
+              return (
+                <li
+                  key={doc.id}
+                  className="flex flex-col gap-3 p-4 transition-colors hover:bg-ui-bg-alt sm:flex-row sm:items-center"
+                >
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-panel)] bg-brand-100 text-accent-on-surface">
+                    <Icon className="h-5 w-5" />
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ui-text-primary">{doc.name}</p>
+                    <p className="cg-meta mt-0.5 block text-sage">
+                      {doc.category} · {doc.type.toUpperCase()} · {humanSize(doc.sizeBytes)} ·{' '}
+                      {formatDate(doc.createdAt)}
+                      {doc.author?.name ? ` · ${doc.author.name}` : ''}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    {doc.sharedWith === 'managers' && (
+                      <span className="cg-pill-warning">Managers only</span>
+                    )}
+                    <a
+                      href={doc.fileUrl ?? '#'}
+                      download={doc.originalName ?? doc.name}
+                      aria-label={`Download ${doc.name}`}
+                      className={cn(
+                        'rounded-full p-2 text-sage transition-colors hover:bg-brand-100 hover:text-accent-on-surface',
+                        !doc.fileUrl && 'pointer-events-none opacity-40'
+                      )}
+                    >
+                      <Download className="h-4 w-4" />
+                    </a>
+                    <button
+                      onClick={() => remove(doc)}
+                      disabled={isPending}
+                      aria-label={`Remove ${doc.name}`}
+                      className="rounded-full p-2 text-sage transition-colors hover:bg-status-error-soft hover:text-status-error disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Upload a document">
+        <form action={formAction} className="space-y-4">
+          {state.error && (
+            <div role="alert" className="cg-callout flex items-center gap-3 text-sm text-status-error">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {state.error}
             </div>
-         </div>
+          )}
 
-         <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-               <thead>
-                 <tr className="border-b border-slate-100">
-                    <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-widest pl-4">Document Name</th>
-                    <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-widest pl-4 hidden md:table-cell">Type</th>
-                    <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-widest pl-4 hidden sm:table-cell">Last Modified</th>
-                    <th className="pb-4 text-xs font-bold text-slate-400 uppercase tracking-widest text-right pr-4">Actions</th>
-                 </tr>
-               </thead>
-               <tbody className="divide-y divide-slate-50">
-                  {filteredRegistry.map(doc => (
-                    <tr key={doc.id} className="group hover:bg-slate-50/50 transition-colors">
-                       <td className="py-6 pl-4">
-                          <div className="flex items-center gap-4">
-                            <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${doc.icon === 'pdf' ? 'bg-red-50 text-red-500' : doc.icon === 'xls' ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
-                               <FileText className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <p className="font-bold text-slate-900 text-[15px]">{doc.title}</p>
-                              <p className="text-xs text-slate-500 mt-1 font-medium">{doc.subtitle}</p>
-                            </div>
-                          </div>
-                       </td>
-                       <td className="py-6 pl-4 hidden md:table-cell">
-                          <span className="bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full text-[11px] font-black tracking-widest">
-                            {doc.type}
-                          </span>
-                       </td>
-                       <td className="py-6 pl-4 text-sm text-slate-600 font-medium hidden sm:table-cell">
-                          {doc.lastModified}
-                       </td>
-                       <td className="py-6 pr-4 text-right">
-                          <div className="flex items-center justify-end gap-5">
-                             <button onClick={() => handleRemove(doc.id)} className="text-xs font-bold tracking-widest text-[#A7705B]/40 hover:text-red-500 transition-colors">REMOVE</button>
-                             <button onClick={() => handleUpdateClick(doc.id)} className="text-xs font-bold tracking-widest text-[#A7705B] hover:text-[#8B5A44] transition-colors">UPDATE</button>
-                          </div>
-                       </td>
-                    </tr>
-                  ))}
-               </tbody>
-            </table>
-         </div>
-      </div>
+          <div className="space-y-2">
+            <label htmlFor="doc-file" className="cg-eyebrow block text-sage">
+              File
+            </label>
+            <input
+              id="doc-file"
+              name="file"
+              type="file"
+              required
+              className="block w-full cursor-pointer rounded-[var(--radius-panel)] border border-dashed border-ui-border bg-ui-bg px-4 py-6 text-sm text-sage file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-accent file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:border-brand-300"
+            />
+            <p className="cg-meta text-sage">PDF, Word, Excel, PowerPoint, CSV or image. Up to 25 MB.</p>
+          </div>
 
-      {/* UPDATE MODAL overlay */}
-      {isUpdateModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-           <div className="bg-white rounded-[2rem] p-8 sm:p-10 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
-              <button onClick={() => setIsUpdateModalOpen(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-                 <X className="w-5 h-5" />
-              </button>
-              
-              <div className="w-14 h-14 bg-[#fceee6] rounded-2xl flex items-center justify-center mb-6 text-[#A7705B]">
-                 <UploadCloud className="w-6 h-6" />
-              </div>
-              
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Update Document</h3>
-              <p className="text-slate-500 mb-8 max-w-[280px]">
-                You are preparing to overwrite <strong>{selectedDoc?.title || "selected file"}</strong>. Upload the new payload below.
-              </p>
-              
-              <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-[#A7705B] hover:bg-[#A7705B]/5 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-[#A7705B] group-hover:text-white transition-colors mb-4">
-                     <ImageIcon className="w-5 h-5" />
-                  </div>
-                  <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">Click to upload file</span>
-                  <span className="text-xs text-slate-400 mt-1">PDF, DOCX, or XLSX (Max 10MB)</span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-8">
-                 <button onClick={() => setIsUpdateModalOpen(false)} className="py-3.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
-                    Cancel
-                 </button>
-                 <button onClick={handleOverwrite} className="py-3.5 rounded-xl font-bold text-white bg-[#A7705B] hover:bg-[#8B5A44] transition-colors shadow-sm active:scale-95">
-                    Overwrite File
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
+          <div className="space-y-2">
+            <label htmlFor="doc-name" className="cg-eyebrow block text-sage">
+              Display name
+            </label>
+            <input
+              id="doc-name"
+              name="name"
+              placeholder="Leave blank to use the file name"
+              className={field}
+            />
+          </div>
 
-      {/* ADD MODAL overlay */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-           <div className="bg-white rounded-[2rem] p-8 sm:p-10 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
-              <button onClick={() => setIsAddModalOpen(false)} className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
-                 <X className="w-5 h-5" />
-              </button>
-              
-              <div className="w-14 h-14 bg-brand-50 rounded-2xl flex items-center justify-center mb-6 text-brand-600">
-                 <PlusCircle className="w-6 h-6" />
-              </div>
-              
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Upload New Document</h3>
-              <p className="text-slate-500 mb-8 max-w-[280px]">
-                Add a new file to the secure company registry. It will immediately be synchronized across staff portals.
-              </p>
-              
-              <div className="border-2 border-dashed border-slate-300 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-brand-500 hover:bg-brand-50/50 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-brand-500 group-hover:text-white transition-colors mb-4">
-                     <ImageIcon className="w-5 h-5" />
-                  </div>
-                  <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900">Click to upload file</span>
-                  <span className="text-xs text-slate-400 mt-1">PDF, DOCX, or XLSX (Max 10MB)</span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 mt-8">
-                 <button onClick={() => setIsAddModalOpen(false)} className="py-3.5 rounded-xl font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
-                    Cancel
-                 </button>
-                 <button onClick={handleAddNew} className="py-3.5 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-700 transition-colors shadow-sm active:scale-95">
-                    Upload to Registry
-                 </button>
-              </div>
-           </div>
-        </div>
-      )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label htmlFor="doc-category" className="cg-eyebrow block text-sage">
+                Category
+              </label>
+              <select id="doc-category" name="category" className={field} defaultValue="GENERAL">
+                {CATEGORIES.map(c => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
 
+            <div className="space-y-2">
+              <label htmlFor="doc-shared" className="cg-eyebrow block text-sage">
+                Who can see it
+              </label>
+              <select id="doc-shared" name="sharedWith" className={field} defaultValue="all">
+                <option value="all">Everyone</option>
+                <option value="managers">Managers only</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsAddOpen(false)}
+              className="cg-btn-secondary min-h-0 py-2.5 text-sm"
+            >
+              Cancel
+            </button>
+            <button type="submit" disabled={isUploading} className="cg-btn-primary min-h-0 py-2.5 text-sm">
+              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <PlusCircle className="h-4 w-4" />}
+              {isUploading ? 'One moment.' : 'Upload'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
