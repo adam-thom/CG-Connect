@@ -3,10 +3,9 @@
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
-import { promises as fs } from 'fs';
 import path from 'path';
+import { storeFile, removeFile } from '@/lib/storage';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'docs');
 const MAX_BYTES = 25 * 1024 * 1024;
 
 /** Extensions we will store, mapped from the browser-reported type. */
@@ -70,9 +69,13 @@ export async function uploadDocument(
       return { error: 'That file is larger than 25 MB.' };
     }
 
-    await fs.mkdir(UPLOAD_DIR, { recursive: true });
     const stored = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-    await fs.writeFile(path.join(UPLOAD_DIR, stored), Buffer.from(await file.arrayBuffer()));
+    const fileUrl = await storeFile(
+      'docs',
+      stored,
+      Buffer.from(await file.arrayBuffer()),
+      file.type || undefined
+    );
 
     await prisma.document.create({
       data: {
@@ -81,7 +84,7 @@ export async function uploadDocument(
         category,
         sizeBytes: file.size,
         sharedWith: sharedWith === 'managers' ? 'managers' : 'all',
-        fileUrl: `/uploads/docs/${stored}`,
+        fileUrl,
         originalName: file.name,
         authorId: user.id,
       },
@@ -121,11 +124,8 @@ export async function deleteDocument(id: string) {
   if (!doc) throw new Error('We could not find that document.');
 
   // Remove the stored file too, so deleting from the registry does not leave
-  // an orphan on disk that is still reachable by its URL.
-  if (doc.fileUrl) {
-    const abs = path.join(process.cwd(), 'public', doc.fileUrl.replace(/^\//, ''));
-    await fs.unlink(abs).catch(() => {});
-  }
+  // an orphan that is still reachable by its URL.
+  await removeFile(doc.fileUrl);
 
   await prisma.document.delete({ where: { id } });
 

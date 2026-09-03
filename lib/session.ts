@@ -2,8 +2,9 @@ import 'server-only';
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/db';
+import { requireSessionSecret } from '@/lib/secret';
 
-const secretKey = process.env.SESSION_SECRET || 'super-secret-key-for-cg-connect-dev-only-change-me';
+const secretKey = requireSessionSecret();
 const encodedKey = new TextEncoder().encode(secretKey);
 
 export type SessionPayload = {

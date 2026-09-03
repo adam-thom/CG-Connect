@@ -3,9 +3,8 @@
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
-import { promises as fs } from 'fs';
-import path from 'path';
 import sharp from 'sharp';
+import { storeFile } from '@/lib/storage';
 import { notifyEveryone } from '@/app/actions/notifications';
 
 /** What every news form action resolves to, for useActionState. */
@@ -14,7 +13,6 @@ export type NewsFormState = { error?: string; success?: boolean; id?: string };
 const MEDIA_TYPES = ['ARTICLE', 'VIDEO', 'RESOURCE'] as const;
 type MediaType = (typeof MEDIA_TYPES)[number];
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads', 'news');
 // Generous, because everything is re-encoded below - a comms person should be
 // able to drop a photo straight off a camera without thinking about it.
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
@@ -96,10 +94,9 @@ async function saveFeaturedImage(file: File | null): Promise<StoredImage | null>
     throw new Error("We couldn't read that image. Please try another file.");
   }
 
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
   const name = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.webp`;
-  await fs.writeFile(path.join(UPLOAD_DIR, name), output);
-  return { url: `/uploads/news/${name}`, width: info.width, height: info.height };
+  const url = await storeFile('news', name, output, 'image/webp');
+  return { url, width: info.width, height: info.height };
 }
 
 function readPostForm(formData: FormData) {
